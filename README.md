@@ -138,3 +138,19 @@ The real cat (橘子) comes from AI-generated green-screen videos made by the pr
 To add your own cats (e.g. generated videos), see [docs/cat-video-brief.md](docs/cat-video-brief.md) and `tools/make_real_cats.py`.
 
 The cat, lion, tiger and drink animations and the app icon use [Noto Emoji Animation](https://googlefonts.github.io/noto-emoji-animation/) by Google, licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). The frames were resized and converted to PNG sprite sheets.
+
+## License
+
+CatSaver is open source under the [MIT License](LICENSE). This covers the code, the hand-drawn cat, and the real cat 橘子 sprites made from the project owner's AI-generated videos. The Noto emoji sprites and the app icon are © Google, under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
+
+## Code signing policy
+
+Free code signing provided by [SignPath.io](https://signpath.io), certificate by [SignPath Foundation](https://signpath.org).
+
+- Only release builds (`v*` tags) are signed. They are built and signed automatically by GitHub Actions from the source in this repository (`.github/workflows/build.yml`).
+- Committers and reviewers: [htylab](https://github.com/htylab)
+- Approvers: [htylab](https://github.com/htylab)
+
+## Privacy
+
+This program will not transfer any information to other networked systems unless specifically requested by the user or the person installing or operating it. Settings, the error log and the daily water count stay on your computer in `%APPDATA%\CatSaver`.
