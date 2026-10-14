@@ -16,7 +16,7 @@ internal sealed class RealCatScene : IDisposable
 
     private readonly SpritePlayer _player;
     private readonly SpriteCatalog.SheetInfo _walk, _sit;
-    private readonly SpriteCatalog.SheetInfo? _sitDown;
+    private readonly List<SpriteCatalog.SheetInfo> _sitDowns;
     private readonly List<SpriteCatalog.SheetInfo> _acts;
     private readonly float _k; // logical units per sprite pixel (same for every clip)
 
@@ -24,7 +24,7 @@ internal sealed class RealCatScene : IDisposable
     {
         _walk = catalog.Sheets[set.Walkers[rng.Next(set.Walkers.Count)]];
         _sit = catalog.Sheets[set.Emoji[rng.Next(set.Emoji.Count)]];
-        _sitDown = set.SitDowns.Count > 0 ? catalog.Sheets[set.SitDowns[rng.Next(set.SitDowns.Count)]] : null;
+        _sitDowns = set.SitDowns.Select(a => catalog.Sheets[a]).OrderBy(_ => rng.Next()).ToList();
         _acts = set.Acts.Select(a => catalog.Sheets[a]).OrderBy(_ => rng.Next()).ToList();
         _player = new SpritePlayer(catalog, Array.Empty<string>());
         _k = SitHeight / _sit.FrameHeight;
@@ -32,11 +32,18 @@ internal sealed class RealCatScene : IDisposable
 
     // ---- timings --------------------------------------------------------------
 
-    private double SitDownSeconds => _sitDown?.Seconds ?? 0;
-    /// <summary>Part of the sit-down clip where the cat is still walking (it keeps moving then).</summary>
-    private double SitDownWalkSeconds => _sitDown is null ? 0 : _sitDown.WalkFrames * _sitDown.FrameMs / 1000.0;
+    /// <summary>How the cat sits down on this visit (e.g. walk-and-sit, or stretch-then-sit); they alternate.</summary>
+    // (visit + visit / 2) so each way of sitting down happens from both sides.
+    private SpriteCatalog.SheetInfo? SitDown(int visit) =>
+        _sitDowns.Count == 0 ? null : _sitDowns[(visit + visit / 2) % _sitDowns.Count];
+    private double SitDownSeconds(int visit) => SitDown(visit)?.Seconds ?? 0;
+    /// <summary>Part of the sit-down clip before the cat starts sitting.</summary>
+    private double BeforeSitSeconds(int visit) =>
+        SitDown(visit) is { } s ? s.WalkFrames * s.FrameMs / 1000.0 : 0;
+    /// <summary>How long the cat keeps moving during the sit-down clip (only if it walks in it).</summary>
+    private double MovingSeconds(int visit) => SitDown(visit) is { Walks: true } ? BeforeSitSeconds(visit) : 0;
     /// <summary>Standing up = the sitting part of the sit-down clip, backwards.</summary>
-    private double StandUpSeconds => SitDownSeconds - SitDownWalkSeconds;
+    private double StandUpSeconds(int visit) => SitDownSeconds(visit) - BeforeSitSeconds(visit);
 
     private SpriteCatalog.SheetInfo? Act(int visit) => _acts.Count == 0 ? null : _acts[visit % _acts.Count];
     private double SitSeconds(int visit) => IdleSeconds * 2 + (Act(visit)?.Seconds ?? 0);
@@ -49,20 +56,28 @@ internal sealed class RealCatScene : IDisposable
     {
         float walkW = _walk.FrameWidth * _k;
         double speed = Math.Max(0.1, _walk.Speed) * walkW; // logical units per second
-        float approach = (float)(SitDownWalkSeconds * speed); // still walking during the sit-down clip
 
         // A "visit": walk in, sit down, sit, stand up, walk out. Two visits per round
         // (in from the left and out right, then in from the right and out left).
-        double inDist = centerX - approach - (left - walkW);
         double outDist = right + walkW - centerX;
-        double visitIn = inDist / speed, visitOut = outDist / speed;
-        double Visit(int v) => visitIn + SitDownSeconds + SitSeconds(v) + StandUpSeconds + visitOut;
+        double visitOut = outDist / speed;
+        double Approach(int v) => MovingSeconds(v) * speed; // still walking during the sit-down clip
+        double VisitIn(int v) => (centerX - Approach(v) - (left - walkW)) / speed;
+        double Visit(int v) => VisitIn(v) + SitDownSeconds(v) + SitSeconds(v) + StandUpSeconds(v) + visitOut;
 
-        int round = (int)(t / (Visit(0) + Visit(1)));
-        double p = t - round * (Visit(0) + Visit(1));
-        int visit = round * 2;
-        if (p >= Visit(0)) { p -= Visit(0); visit++; }
+        // Visits differ in length (different sit-downs and acts), so step through them;
+        // the pattern repeats after cycleVisits visits.
+        int visit = 0;
+        double p = t;
+        double period = 0;
+        int cycleVisits = Lcm(Lcm(2, Math.Max(1, _sitDowns.Count) * 2), Math.Max(1, _acts.Count)) * 2;
+        for (int v = 0; v < cycleVisits; v++) period += Visit(v);
+        p %= period;
+        while (p >= Visit(visit)) { p -= Visit(visit); visit++; }
         bool fromRight = visit % 2 == 1;
+        var sitDown = SitDown(visit);
+        double visitIn = VisitIn(visit);
+        float approach = (float)Approach(visit);
         int dir = fromRight ? -1 : 1;
         float edgeIn = fromRight ? right + walkW : left - walkW;
 
@@ -72,15 +87,15 @@ internal sealed class RealCatScene : IDisposable
         float stopX = centerX - dir * approach;
 
         // 2. Sit down (moving on while the clip still shows walking).
-        if (p < SitDownSeconds)
+        if (p < SitDownSeconds(visit) && sitDown is not null)
         {
-            float x = stopX + dir * (float)(Math.Min(p, SitDownWalkSeconds) * speed);
+            float x = stopX + dir * (float)(Math.Min(p, MovingSeconds(visit)) * speed);
             float k = (float)Math.Clamp(p / Fade, 0, 1);
             if (k < 1) DrawWalk(g, x, fromRight, visitIn + p, ground, 1 - k);
-            DrawSheet(g, _sitDown!, FrameOf(_sitDown!, p), x, ground, fromRight, k);
+            DrawSheet(g, sitDown, FrameOf(sitDown, p), x, ground, fromRight, k);
             return;
         }
-        p -= SitDownSeconds;
+        p -= SitDownSeconds(visit);
 
         // 3. Sit: look around, do something, look around.
         double sit = SitSeconds(visit);
@@ -88,21 +103,28 @@ internal sealed class RealCatScene : IDisposable
         p -= sit;
 
         // 4. Stand up (the sit-down clip backwards, from sitting back to standing).
-        if (p < StandUpSeconds && _sitDown is not null)
+        if (p < StandUpSeconds(visit) && sitDown is not null)
         {
-            int frame = _sitDown.Frames - 1 - FrameOf(_sitDown, p);
+            int frame = sitDown.Frames - 1 - FrameOf(sitDown, p);
             float k = (float)Math.Clamp(p / Fade, 0, 1);
             if (k < 1) DrawSheet(g, _sit, 0, centerX, ground, fromRight, 1 - k);
-            DrawSheet(g, _sitDown, Math.Max(frame, _sitDown.WalkFrames), centerX, ground, fromRight, k);
+            DrawSheet(g, sitDown, Math.Max(frame, sitDown.WalkFrames), centerX, ground, fromRight, k);
             return;
         }
-        p -= StandUpSeconds;
+        p -= StandUpSeconds(visit);
 
         // 5. Walk out the other side.
         float fade = (float)Math.Clamp(p / Fade, 0, 1);
-        if (fade < 1 && _sitDown is not null)
-            DrawSheet(g, _sitDown, _sitDown.WalkFrames, centerX, ground, fromRight, 1 - fade);
+        if (fade < 1 && sitDown is not null)
+            DrawSheet(g, sitDown, sitDown.WalkFrames, centerX, ground, fromRight, 1 - fade);
         DrawWalk(g, centerX + dir * (float)(p * speed), fromRight, p, ground, fade);
+    }
+
+    private static int Lcm(int a, int b)
+    {
+        int x = a, y = b;
+        while (y != 0) (x, y) = (y, x % y);
+        return a / x * b;
     }
 
     private void DrawSitting(Graphics g, float x, bool mirror, double p, int visit, float ground)
@@ -112,8 +134,8 @@ internal sealed class RealCatScene : IDisposable
 
         // Fade in from the end of the sit-down clip, out into the stand-up clip.
         float start = (float)Math.Clamp(p / Fade, 0, 1);
-        if (start < 1 && _sitDown is not null)
-            DrawSheet(g, _sitDown, _sitDown.Frames - 1, x, ground, mirror, 1 - start);
+        if (start < 1 && SitDown(visit) is { } sitDown)
+            DrawSheet(g, sitDown, sitDown.Frames - 1, x, ground, mirror, 1 - start);
 
         bool acting = act is not null && p >= IdleSeconds && p < IdleSeconds + actSeconds;
         if (!acting)

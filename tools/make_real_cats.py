@@ -33,15 +33,19 @@ OUT = ROOT / "src" / "CatSaver" / "Assets" / "RealCats"
 # role "walk": a cat walking in place, facing right; the app moves it across the screen.
 # role "sit":  a cat idling in place; played forward then backward (ping-pong).
 # role "act":  the cat doing something (meowing, waving, drinking); one is played now and then.
-# role "sitdown": the cat walking in and sitting down (also played backwards to stand up).
+# role "sitdown": the cat arriving and sitting down (also played backwards to stand up).
+#   "walks": False if the cat doesn't walk first (e.g. stretches); "sitStart": seconds where sitting starts.
 CLIPS = [
     # One AI-generated orange tabby (by the project owner) in several clips, all
     # framed alike, so one shared "scale" keeps the cat the same size in every clip.
     {"file": "tools/source/orange-walk.mp4", "role": "walk", "fps": 24},
     {"file": "tools/source/orange-walk-to-sit.mp4", "role": "sitdown", "fps": 12},
+    # Stops, stretches, then sits: doesn't walk, so the cat stays put while it plays.
+    {"file": "tools/source/orange-stretch.mp4", "role": "sitdown", "fps": 12, "walks": False, "sitStart": 5.0},
     {"file": "tools/source/orange-sit.mp4", "role": "sit", "fps": 8, "start": 0.0, "length": 5.0},
     {"file": "tools/source/orange-meow.mp4", "role": "act", "fps": 10, "start": 0.0, "length": 6.5},
-    {"file": "tools/source/orange-wave.mp4", "role": "act", "fps": 10, "start": 0.0, "length": 6.5, "key": (10, 40)},
+    {"file": "tools/source/orange-wave-v2.mp4", "role": "act", "fps": 10, "start": 0.0, "length": 6.5},
+    {"file": "tools/source/orange-head-tilt.mp4", "role": "act", "fps": 10, "start": 0.0, "length": 5.1},
     {"file": "tools/source/orange-drink.mp4", "role": "act", "fps": 10, "start": 0.5, "length": 7.0},
 ]
 COLUMNS = 8
@@ -216,11 +220,14 @@ def main():
             frames = frames[s:s + n]
             print(f"{name}: walk loop frames {s}..{s + n} (match error {err:.3f})")
         if clip["role"] == "sitdown":
-            # Sitting down raises the head: the walk ends where the cat starts getting taller.
-            heights = [np.ptp(np.nonzero(f[..., 3].max(axis=1) > 20)[0]) for f in frames]
-            walk_h = np.median(heights[:max(3, len(heights) // 5)])
-            stand = next((i for i, h in enumerate(heights) if h > walk_h * 1.06), len(frames) - 1)
-            print(f"{name}: walks in place until frame {stand} of {len(frames)}")
+            if "sitStart" in clip:
+                stand = min(len(frames) - 1, round(clip["sitStart"] * clip["fps"]))
+            else:
+                # Sitting down raises the head: it starts where the cat starts getting taller.
+                heights = [np.ptp(np.nonzero(f[..., 3].max(axis=1) > 20)[0]) for f in frames]
+                walk_h = np.median(heights[:max(3, len(heights) // 5)])
+                stand = next((i for i, h in enumerate(heights) if h > walk_h * 1.06), len(frames) - 1)
+            print(f"{name}: sits down from frame {stand} of {len(frames)}")
         soften_edges(frames)
         images = crop_and_scale(frames, clip.get("height"))
         w, h, size = save_sheet(images, name)
@@ -231,7 +238,8 @@ def main():
         if clip["role"] == "sitdown":
             sprite["startAnchorX"] = round(body_x(np.array(images[0])) / w, 3)
             sprite["endAnchorX"] = round(body_x(np.array(images[-1])) / w, 3)
-            sprite["walkFrames"] = stand
+            sprite["walkFrames"] = stand              # sitting starts here (standing up = reverse from the end to here)
+            sprite["walks"] = clip.get("walks", True)  # does the cat walk (in place) before sitting?
         sprites.append(sprite)
         if clip["role"] == "walk":
             walk_sprite = sprite

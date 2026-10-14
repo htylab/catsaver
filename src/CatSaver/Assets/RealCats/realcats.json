@@ -24,7 +24,23 @@
       "anchorX": 0.536,
       "startAnchorX": 0.495,
       "endAnchorX": 0.571,
-      "walkFrames": 25
+      "walkFrames": 25,
+      "walks": true
+    },
+    {
+      "name": "real_orange_stretch",
+      "frames": 88,
+      "columns": 8,
+      "size": 298,
+      "width": 477,
+      "height": 298,
+      "frameMs": 83,
+      "pingPong": false,
+      "anchorX": 0.457,
+      "startAnchorX": 0.531,
+      "endAnchorX": 0.549,
+      "walkFrames": 60,
+      "walks": false
     },
     {
       "name": "real_orange_sit",
@@ -49,15 +65,26 @@
       "anchorX": 0.607
     },
     {
-      "name": "real_orange_wave",
+      "name": "real_orange_wave_v2",
       "frames": 65,
       "columns": 8,
-      "size": 299,
-      "width": 536,
-      "height": 299,
+      "size": 289,
+      "width": 324,
+      "height": 289,
       "frameMs": 100,
       "pingPong": false,
-      "anchorX": 0.521
+      "anchorX": 0.737
+    },
+    {
+      "name": "real_orange_head_tilt",
+      "frames": 51,
+      "columns": 8,
+      "size": 288,
+      "width": 248,
+      "height": 288,
+      "frameMs": 100,
+      "pingPong": false,
+      "anchorX": 0.714
     },
     {
       "name": "real_orange_drink",
@@ -82,11 +109,13 @@
         "real_orange_walk"
       ],
       "sitDowns": [
-        "real_orange_walk_to_sit"
+        "real_orange_walk_to_sit",
+        "real_orange_stretch"
       ],
       "acts": [
         "real_orange_meow",
-        "real_orange_wave",
+        "real_orange_wave_v2",
+        "real_orange_head_tilt",
         "real_orange_drink"
       ]
     }
@@ -106,6 +135,12 @@
       "url": ""
     },
     {
+      "sprite": "real_orange_stretch",
+      "pixabayId": null,
+      "author": "htylab (AI-generated)",
+      "url": ""
+    },
+    {
       "sprite": "real_orange_sit",
       "pixabayId": null,
       "author": "htylab (AI-generated)",
@@ -118,7 +153,13 @@
       "url": ""
     },
     {
-      "sprite": "real_orange_wave",
+      "sprite": "real_orange_wave_v2",
+      "pixabayId": null,
+      "author": "htylab (AI-generated)",
+      "url": ""
+    },
+    {
+      "sprite": "real_orange_head_tilt",
       "pixabayId": null,
       "author": "htylab (AI-generated)",
       "url": ""
