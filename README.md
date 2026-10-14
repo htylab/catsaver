@@ -133,7 +133,7 @@ To add a cat set or a drink, edit `SPRITES` / `SETS` / `PROPS` in `tools/make_no
 
 ## Credits
 
-The real cat (橘子) comes from AI-generated green-screen videos made by the project owner. They were background-removed, cropped and packed into sprite sheets with `tools/make_real_cats.py`; the source videos are not in the repo. The tool can also fetch green-screen clips from [Pixabay](https://pixabay.com/) through its API.
+The real cat (橘子) comes from AI-generated green-screen videos made by the project owner. They were background-removed, cropped and packed into sprite sheets with `tools/make_real_cats.py`. The source videos are in `tools/source/`, so the sprites can be rebuilt. The tool can also fetch green-screen clips from [Pixabay](https://pixabay.com/) through its API.
 
 To add your own cats (e.g. generated videos), see [docs/cat-video-brief.md](docs/cat-video-brief.md) and `tools/make_real_cats.py`.
 
