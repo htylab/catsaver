@@ -1,0 +1,36 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{56272C69-25EC-4C76-AE81-EEFB145B40A3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CatSaver", "src\CatSaver\CatSaver.csproj", "{099B2F68-9491-47C7-A076-973182222442}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{186EA7C7-758B-4EF0-91DC-AC756447BC76}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CatSaver.Tests", "tests\CatSaver.Tests\CatSaver.Tests.csproj", "{D8FB4EF9-E3BF-42B4-9E5A-E4B1EF812C31}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{099B2F68-9491-47C7-A076-973182222442}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{099B2F68-9491-47C7-A076-973182222442}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{099B2F68-9491-47C7-A076-973182222442}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{099B2F68-9491-47C7-A076-973182222442}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D8FB4EF9-E3BF-42B4-9E5A-E4B1EF812C31}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D8FB4EF9-E3BF-42B4-9E5A-E4B1EF812C31}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D8FB4EF9-E3BF-42B4-9E5A-E4B1EF812C31}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D8FB4EF9-E3BF-42B4-9E5A-E4B1EF812C31}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{099B2F68-9491-47C7-A076-973182222442} = {56272C69-25EC-4C76-AE81-EEFB145B40A3}
+		{D8FB4EF9-E3BF-42B4-9E5A-E4B1EF812C31} = {186EA7C7-758B-4EF0-91DC-AC756447BC76}
+	EndGlobalSection
+EndGlobal

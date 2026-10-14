@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+    <!-- Allows building (not running) on Linux/macOS, e.g. for CI sanity checks. -->
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
+    <ApplicationIcon>Assets\catsaver.ico</ApplicationIcon>
+    <AssemblyName>CatSaver</AssemblyName>
+    <RootNamespace>CatSaver</RootNamespace>
+    <Product>CatSaver</Product>
+    <Description>Hourly hydration reminder with a cute cat</Description>
+    <Version>1.0.0</Version>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Assets\catsaver.ico" LogicalName="CatSaver.catsaver.ico" />
+  </ItemGroup>
+
+</Project>
