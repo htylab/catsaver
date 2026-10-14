@@ -15,6 +15,7 @@ internal sealed class OverlayManager : IDisposable
     private readonly System.Windows.Forms.Timer _timer;
     private readonly List<CatWindow> _cats = new();
     private readonly List<DimForm> _dims = new();
+    private readonly List<DismissButton> _buttons = new();
     private readonly Stopwatch _clock = new();
 
     private DateTime _endsAt;
@@ -29,6 +30,9 @@ internal sealed class OverlayManager : IDisposable
         _timer.Tick += (_, _) => Tick();
         Microsoft.Win32.SystemEvents.DisplaySettingsChanged += OnDisplaySettingsChanged;
     }
+
+    /// <summary>Raised when the user clicks the "我在忙，先關掉" button.</summary>
+    public event EventHandler? DismissRequested;
 
     public bool IsShowing => _cats.Count > 0 && _closingStartedAt is null;
 
@@ -53,9 +57,17 @@ internal sealed class OverlayManager : IDisposable
                 dim.Show();
                 _dims.Add(dim);
             }
-            var cat = new CatWindow(screen, _renderer, _config.CatScale);
+            var cat = CatWindow.Create(screen, _renderer, _config.CatScale);
             cat.Show();
             _cats.Add(cat);
+
+            if (_config.ShowDismissButton)
+            {
+                var button = DismissButton.Create(screen, cat.WindowBounds, _config.DismissButtonText, _renderer.Font);
+                button.Clicked += (_, _) => DismissRequested?.Invoke(this, EventArgs.Empty);
+                button.Show();
+                _buttons.Add(button);
+            }
         }
 
         _clock.Restart();
@@ -98,12 +110,15 @@ internal sealed class OverlayManager : IDisposable
             dim.Opacity = _config.DimOpacity * alpha;
         foreach (var cat in _cats)
             cat.RenderFrame(frame, alpha);
+        foreach (var button in _buttons)
+            button.RenderFrame(frame, alpha);
 
         // Every ~2 seconds make sure nothing has been raised above us.
         if (++_ticks % (_config.AnimationFps * 2) == 0)
         {
             foreach (var dim in _dims) dim.BringToTop();
             foreach (var cat in _cats) cat.BringToTop();
+            foreach (var button in _buttons) button.BringToTop();
         }
     }
 
@@ -119,10 +134,10 @@ internal sealed class OverlayManager : IDisposable
     private void CloseWindows()
     {
         _timer.Stop();
-        foreach (var w in _cats) w.Close();
-        foreach (var w in _dims) w.Close();
-        foreach (var w in _cats) w.Dispose();
-        foreach (var w in _dims) w.Dispose();
+        var windows = _buttons.Cast<Form>().Concat(_cats).Concat(_dims).ToList();
+        foreach (var w in windows) w.Close();
+        foreach (var w in windows) w.Dispose();
+        _buttons.Clear();
         _cats.Clear();
         _dims.Clear();
         _closingStartedAt = null;

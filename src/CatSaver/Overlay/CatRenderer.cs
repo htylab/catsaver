@@ -37,12 +37,14 @@ internal sealed class CatRenderer
     public CatRenderer(AppConfig config)
     {
         _config = config;
-        _font = ResolveFont(config.FontFamily);
+        _font = Drawing.ResolveFont(config.FontFamily);
         _fur = config.GetCatColor();
         _furDark = Shade(_fur, 0.72f);
         _furLight = Mix(_fur, Color.White, 0.65f);
         _outline = Shade(_fur, 0.45f);
     }
+
+    public FontFamily Font => _font;
 
     public void Draw(Graphics g, in CatFrame f)
     {
@@ -356,11 +358,11 @@ internal sealed class CatRenderer
         g.TranslateTransform(-Cx, -150);
 
         var rect = new RectangleF(40, 20, CanvasWidth - 80, 240);
-        using (var shadow = RoundedRect(new RectangleF(rect.X + 6, rect.Y + 10, rect.Width, rect.Height), 60))
+        using (var shadow = Drawing.RoundedRect(new RectangleF(rect.X + 6, rect.Y + 10, rect.Width, rect.Height), 60))
         using (var shadowBrush = new SolidBrush(Color.FromArgb(60, 0, 0, 0)))
             g.FillPath(shadowBrush, shadow);
 
-        using var bubble = RoundedRect(rect, 60);
+        using var bubble = Drawing.RoundedRect(rect, 60);
         // Tail pointing down at the cat's head.
         using var tail = new GraphicsPath();
         tail.AddPolygon(new[] { new PointF(Cx - 40, rect.Bottom - 4), new PointF(Cx + 40, rect.Bottom - 4), new PointF(Cx + 10, rect.Bottom + 55) });
@@ -392,54 +394,8 @@ internal sealed class CatRenderer
         g.Restore(s);
     }
 
-    /// <summary>Draws centred text, shrinking it to fit the box if needed.</summary>
-    private void DrawFittedText(Graphics g, string text, FontStyle style, float emSize, Color color, RectangleF box)
-    {
-        if (string.IsNullOrEmpty(text)) return;
-        var fontStyle = _font.IsStyleAvailable(style) ? style : FontStyle.Regular;
-
-        using var path = new GraphicsPath();
-        using var format = new StringFormat(StringFormat.GenericTypographic) { FormatFlags = StringFormatFlags.NoWrap };
-        path.AddString(text, _font, (int)fontStyle, emSize, PointF.Empty, format);
-        var bounds = path.GetBounds();
-        if (bounds.Width <= 0 || bounds.Height <= 0) return;
-
-        float scale = Math.Min(1f, Math.Min(box.Width / bounds.Width, box.Height / bounds.Height));
-        using var m = new Matrix();
-        m.Translate(box.X + box.Width / 2, box.Y + box.Height / 2);
-        m.Scale(scale, scale);
-        m.Translate(-(bounds.X + bounds.Width / 2), -(bounds.Y + bounds.Height / 2));
-        path.Transform(m);
-
-        using var brush = new SolidBrush(color);
-        g.FillPath(brush, path);
-    }
-
-    // -------------------------------------------------------------- helpers
-
-    private static FontFamily ResolveFont(string preferred)
-    {
-        string[] candidates = { preferred, "Microsoft JhengHei UI", "Microsoft JhengHei", "Microsoft YaHei UI", "Segoe UI" };
-        var installed = FontFamily.Families;
-        foreach (var name in candidates)
-        {
-            var match = installed.FirstOrDefault(f => string.Equals(f.Name, name, StringComparison.OrdinalIgnoreCase));
-            if (match is not null) return match;
-        }
-        return FontFamily.GenericSansSerif;
-    }
-
-    private static GraphicsPath RoundedRect(RectangleF r, float radius)
-    {
-        float d = radius * 2;
-        var p = new GraphicsPath();
-        p.AddArc(r.X, r.Y, d, d, 180, 90);
-        p.AddArc(r.Right - d, r.Y, d, d, 270, 90);
-        p.AddArc(r.Right - d, r.Bottom - d, d, d, 0, 90);
-        p.AddArc(r.X, r.Bottom - d, d, d, 90, 90);
-        p.CloseFigure();
-        return p;
-    }
+    private void DrawFittedText(Graphics g, string text, FontStyle style, float emSize, Color color, RectangleF box) =>
+        Drawing.DrawFittedText(g, _font, text, style, emSize, color, box);
 
     private static float EaseOutBack(float x)
     {

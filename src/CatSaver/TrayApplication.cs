@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using CatSaver.Overlay;
 
 namespace CatSaver;
@@ -9,9 +8,10 @@ namespace CatSaver;
 /// </summary>
 internal sealed class TrayApplication : ApplicationContext
 {
-    private readonly AppConfig _config;
-    private readonly ReminderSchedule _schedule;
-    private readonly OverlayManager _overlay;
+    private AppConfig _config;
+    private ReminderSchedule _schedule;
+    private OverlayManager _overlay;
+    private SettingsForm? _settingsForm;
     private readonly NotifyIcon _tray;
     private readonly System.Windows.Forms.Timer _scheduleTimer;
     private readonly ToolStripMenuItem _pauseItem;
@@ -25,11 +25,11 @@ internal sealed class TrayApplication : ApplicationContext
     /// <summary>Set when the user picks "重新啟動" so Program can relaunch after exit.</summary>
     public bool RestartRequested { get; private set; }
 
-    public TrayApplication(AppConfig config, bool showImmediately, string? configError)
+    public TrayApplication(AppConfig config, bool showImmediately, bool showSettings, string? configError)
     {
         _config = config;
         _schedule = config.CreateSchedule();
-        _overlay = new OverlayManager(config);
+        _overlay = CreateOverlay(config);
         _icon = LoadIcon();
 
         _pauseItem = new ToolStripMenuItem("暫停提醒", null, (_, _) => TogglePause()) { CheckOnClick = false };
@@ -41,7 +41,7 @@ internal sealed class TrayApplication : ApplicationContext
         menu.Items.Add(_pauseItem);
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add(_autoStartItem);
-        menu.Items.Add(new ToolStripMenuItem("開啟設定檔…", null, (_, _) => OpenConfig()));
+        menu.Items.Add(new ToolStripMenuItem("設定…", null, (_, _) => OpenSettings()));
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add(new ToolStripMenuItem("重新啟動", null, (_, _) => Restart()));
         menu.Items.Add(new ToolStripMenuItem("結束", null, (_, _) => ExitThread()));
@@ -58,21 +58,76 @@ internal sealed class TrayApplication : ApplicationContext
             ContextMenuStrip = menu,
             Visible = true,
         };
-        _tray.DoubleClick += (_, _) => ShowNow();
+        _tray.DoubleClick += (_, _) => OpenSettings();
 
         _scheduleTimer = new System.Windows.Forms.Timer { Interval = 1000 };
         _scheduleTimer.Tick += (_, _) => CheckSchedule();
         _scheduleTimer.Start();
 
+        if (showSettings) OpenSettings();
+
         if (configError is not null)
             _tray.ShowBalloonTip(8000, "CatSaver 設定錯誤", configError, ToolTipIcon.Warning);
         else if (!showImmediately)
             _tray.ShowBalloonTip(4000, "CatSaver 在背景執行中 🐱",
-                $"每 {_config.IntervalMinutes} 分鐘提醒你起來喝水。右鍵點選系統匣圖示可以暫停或結束。",
+                $"每 {_config.IntervalMinutes} 分鐘提醒你起來喝水。雙擊系統匣圖示可開啟設定，右鍵可暫停或結束。",
                 ToolTipIcon.Info);
 
         if (showImmediately) ShowNow();
         CheckSchedule();
+    }
+
+    private OverlayManager CreateOverlay(AppConfig config)
+    {
+        var overlay = new OverlayManager(config);
+        overlay.DismissRequested += (_, _) => DismissCurrent();
+        return overlay;
+    }
+
+    /// <summary>The settings currently in effect (a copy, safe to edit).</summary>
+    public AppConfig CurrentConfig => _config.Clone();
+
+    /// <summary>
+    /// Switches to new settings immediately (no restart). If a reminder is on screen
+    /// it is rebuilt with the new look / timing.
+    /// </summary>
+    public void ApplyConfig(AppConfig config)
+    {
+        config.Normalize();
+        _config = config;
+        _schedule = config.CreateSchedule();
+        _overlay.Dispose();
+        _overlay = CreateOverlay(config);
+        if (_manualUntil is not null) _manualUntil = DateTime.Now.AddMinutes(config.DurationMinutes);
+        CheckSchedule();
+    }
+
+    /// <summary>Shows the cat right now for the configured duration.</summary>
+    public void ShowNow()
+    {
+        _manualUntil = DateTime.Now.AddMinutes(_config.DurationMinutes);
+        CheckSchedule();
+    }
+
+    /// <summary>Ends a "show now" preview (scheduled reminders are unaffected).</summary>
+    public void StopPreview()
+    {
+        _manualUntil = null;
+        CheckSchedule();
+    }
+
+    public void OpenSettings()
+    {
+        if (_settingsForm is { IsDisposed: false })
+        {
+            _settingsForm.WindowState = FormWindowState.Normal;
+            _settingsForm.Activate();
+            return;
+        }
+        _settingsForm = new SettingsForm(this, _icon);
+        _settingsForm.FormClosed += (_, _) => _settingsForm = null;
+        _settingsForm.Show();
+        _settingsForm.Activate();
     }
 
     private void CheckSchedule()
@@ -113,13 +168,8 @@ internal sealed class TrayApplication : ApplicationContext
         if (_tray.Text != text) _tray.Text = text.Length > 127 ? text[..127] : text;
     }
 
-    private void ShowNow()
-    {
-        _manualUntil = DateTime.Now.AddMinutes(_config.DurationMinutes);
-        CheckSchedule();
-    }
-
-    private void DismissCurrent()
+    /// <summary>Hides the current reminder; the next one comes at the next slot as usual.</summary>
+    public void DismissCurrent()
     {
         var now = DateTime.Now;
         _manualUntil = null;
@@ -146,24 +196,10 @@ internal sealed class TrayApplication : ApplicationContext
         }
     }
 
-    private static bool SafeIsAutoStartEnabled()
+    internal static bool SafeIsAutoStartEnabled()
     {
         try { return AutoStart.IsEnabled; }
         catch { return false; }
-    }
-
-    private void OpenConfig()
-    {
-        try
-        {
-            if (!File.Exists(AppConfig.ConfigPath)) _config.Save();
-            Process.Start(new ProcessStartInfo("notepad.exe", $"\"{AppConfig.ConfigPath}\"") { UseShellExecute = true });
-            _tray.ShowBalloonTip(4000, "CatSaver", "修改設定並存檔後，請從選單選「重新啟動」套用。", ToolTipIcon.Info);
-        }
-        catch (Exception ex)
-        {
-            MessageBox.Show(ex.Message, "CatSaver", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-        }
     }
 
     private void Restart()
@@ -181,6 +217,7 @@ internal sealed class TrayApplication : ApplicationContext
     protected override void ExitThreadCore()
     {
         _scheduleTimer.Stop();
+        _settingsForm?.Close();
         _tray.Visible = false;
         _overlay.Dispose();
         base.ExitThreadCore();

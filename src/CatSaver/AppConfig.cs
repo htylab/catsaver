@@ -25,6 +25,12 @@ public sealed class AppConfig
     /// <summary>Show the remaining time ("還剩 15:42") in the bubble.</summary>
     public bool ShowCountdown { get; set; } = true;
 
+    /// <summary>Show a "我在忙，先關掉" button under the cat that dismisses this reminder.</summary>
+    public bool ShowDismissButton { get; set; } = true;
+
+    /// <summary>Text on the dismiss button.</summary>
+    public string DismissButtonText { get; set; } = "我在忙，先關掉";
+
     /// <summary>"all" = cat + dimming on every monitor, "primary" = primary monitor only.</summary>
     public string Monitors { get; set; } = "all";
 
@@ -116,10 +122,14 @@ public sealed class AppConfig
         AnimationFps = Math.Clamp(AnimationFps, 5, 60);
         Message ??= "";
         SubMessage ??= "";
+        if (string.IsNullOrWhiteSpace(DismissButtonText)) DismissButtonText = "我在忙，先關掉";
         Monitors = string.Equals(Monitors, "primary", StringComparison.OrdinalIgnoreCase) ? "primary" : "all";
         if (string.IsNullOrWhiteSpace(FontFamily)) FontFamily = "Microsoft JhengHei UI";
         if (string.IsNullOrWhiteSpace(Animation)) Animation = "wave";
     }
+
+    /// <summary>Copy (all members are values/strings), so the settings window can edit without touching the live config.</summary>
+    public AppConfig Clone() => (AppConfig)MemberwiseClone();
 
     public ReminderSchedule CreateSchedule() =>
         new(TimeSpan.FromMinutes(IntervalMinutes), TimeSpan.FromMinutes(DurationMinutes));
