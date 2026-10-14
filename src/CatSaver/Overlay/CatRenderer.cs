@@ -14,7 +14,7 @@ internal readonly record struct CatFrame(double Time, TimeSpan Remaining);
 /// To change the look, edit this class (or add another renderer and pick it via
 /// the "animation" config value).
 /// </summary>
-internal sealed class CatRenderer
+internal sealed class CatRenderer : IDisposable
 {
     public const float CanvasWidth = 800;
     public const float CanvasHeight = 880;
@@ -23,6 +23,7 @@ internal sealed class CatRenderer
 
     private readonly AppConfig _config;
     private readonly FontFamily _font;
+    private readonly NotoCatAnimation? _noto;
 
     private readonly Color _fur;
     private readonly Color _furDark;
@@ -37,12 +38,21 @@ internal sealed class CatRenderer
     public CatRenderer(AppConfig config)
     {
         _config = config;
-        _font = ResolveFont(config.FontFamily);
+        _font = Drawing.ResolveFont(config.FontFamily);
         _fur = config.GetCatColor();
         _furDark = Shade(_fur, 0.72f);
         _furLight = Mix(_fur, Color.White, 0.65f);
         _outline = Shade(_fur, 0.45f);
+        if (config.Animation == "noto")
+            _noto = NotoCatAnimation.TryLoad(); // falls back to the hand-drawn cat if missing
     }
+
+    /// <summary>Frees decoded animation frames while no reminder is on screen.</summary>
+    public void ReleaseResources() => _noto?.Release();
+
+    public void Dispose() => _noto?.Dispose();
+
+    public FontFamily Font => _font;
 
     public void Draw(Graphics g, in CatFrame f)
     {
@@ -57,9 +67,45 @@ internal sealed class CatRenderer
         g.TranslateTransform(-Cx, -CanvasHeight * 0.6f);
 
         DrawDrops(g, t);
-        DrawCat(g, t);
+        if (_noto is not null) DrawNotoCat(g, t, _noto);
+        else DrawCat(g, t);
         DrawBubble(g, t, f.Remaining);
 
+        g.Restore(state);
+    }
+
+    // ------------------------------------------------------------- noto cat
+
+    private static void DrawNotoCat(Graphics g, double t, NotoCatAnimation noto)
+    {
+        const float size = 480, bottom = 835;
+
+        // Every few seconds: a little hop, then a squash on landing.
+        const double hopEvery = 3.2, hopTime = 0.45, squashTime = 0.18;
+        double p = t % hopEvery;
+        float hop = p < hopTime ? (float)Math.Sin(Math.PI * p / hopTime) : 0f;
+        float squash = p >= hopTime && p < hopTime + squashTime
+            ? (float)Math.Sin(Math.PI * (p - hopTime) / squashTime)
+            : 0f;
+        float breathe = (float)Math.Sin(t * 2.4) * 0.015f;
+
+        float sx = 1f + squash * 0.07f - breathe * 0.5f;
+        float sy = 1f - squash * 0.09f + breathe;
+        float lift = hop * 45f;
+
+        // Shadow shrinks while in the air.
+        using (var shadow = new SolidBrush(Color.FromArgb((int)(55 - hop * 25), 0, 0, 0)))
+        {
+            float w = 330 * (1 - hop * 0.25f) * sx;
+            g.FillEllipse(shadow, Cx - w / 2, bottom - 14, w, 32);
+        }
+
+        var state = g.Save();
+        // Scale/rotate around the bottom centre so the cat stays "on the ground".
+        g.TranslateTransform(Cx, bottom - lift);
+        g.RotateTransform((float)Math.Sin(t * 1.6) * 4f);
+        g.ScaleTransform(sx, sy);
+        noto.Draw(g, t, new RectangleF(-size / 2, -size + 22, size, size)); // emoji has ~22px padding at the bottom
         g.Restore(state);
     }
 
@@ -330,8 +376,16 @@ internal sealed class CatRenderer
             float x = xs[i] + (float)Math.Sin(t * 1.5 + i) * 14;
             float fade = (float)Math.Sin(p / range * Math.PI); // fade in and out
             float size = 22 + (i % 3) * 8;
-            brush.Color = Color.FromArgb((int)(200 * fade), 110, 190, 255);
-            FillDrop(g, brush, x, y, size);
+            if (i % 3 == 1)
+            {
+                brush.Color = Color.FromArgb((int)(210 * fade), 255, 120, 160);
+                FillHeart(g, brush, x, y, size * 1.1f);
+            }
+            else
+            {
+                brush.Color = Color.FromArgb((int)(200 * fade), 110, 190, 255);
+                FillDrop(g, brush, x, y, size);
+            }
         }
     }
 
@@ -341,6 +395,17 @@ internal sealed class CatRenderer
         float r = size / 2;
         path.AddArc(x - r, y - r, size, size, -30, 240);
         path.AddLine(x - r * 0.87f, y - r * 0.5f, x, y - size * 1.25f);
+        path.CloseFigure();
+        g.FillPath(brush, path);
+    }
+
+    private static void FillHeart(Graphics g, Brush brush, float x, float y, float size)
+    {
+        using var path = new GraphicsPath();
+        float r = size / 4;
+        path.AddArc(x - 2 * r, y - r * 1.6f, 2 * r, 2 * r, 150, 210);
+        path.AddArc(x, y - r * 1.6f, 2 * r, 2 * r, 180, 210);
+        path.AddLine(x + r * 1.85f, y + r * 0.1f, x, y + size * 0.55f);
         path.CloseFigure();
         g.FillPath(brush, path);
     }
@@ -356,11 +421,11 @@ internal sealed class CatRenderer
         g.TranslateTransform(-Cx, -150);
 
         var rect = new RectangleF(40, 20, CanvasWidth - 80, 240);
-        using (var shadow = RoundedRect(new RectangleF(rect.X + 6, rect.Y + 10, rect.Width, rect.Height), 60))
+        using (var shadow = Drawing.RoundedRect(new RectangleF(rect.X + 6, rect.Y + 10, rect.Width, rect.Height), 60))
         using (var shadowBrush = new SolidBrush(Color.FromArgb(60, 0, 0, 0)))
             g.FillPath(shadowBrush, shadow);
 
-        using var bubble = RoundedRect(rect, 60);
+        using var bubble = Drawing.RoundedRect(rect, 60);
         // Tail pointing down at the cat's head.
         using var tail = new GraphicsPath();
         tail.AddPolygon(new[] { new PointF(Cx - 40, rect.Bottom - 4), new PointF(Cx + 40, rect.Bottom - 4), new PointF(Cx + 10, rect.Bottom + 55) });
@@ -392,54 +457,8 @@ internal sealed class CatRenderer
         g.Restore(s);
     }
 
-    /// <summary>Draws centred text, shrinking it to fit the box if needed.</summary>
-    private void DrawFittedText(Graphics g, string text, FontStyle style, float emSize, Color color, RectangleF box)
-    {
-        if (string.IsNullOrEmpty(text)) return;
-        var fontStyle = _font.IsStyleAvailable(style) ? style : FontStyle.Regular;
-
-        using var path = new GraphicsPath();
-        using var format = new StringFormat(StringFormat.GenericTypographic) { FormatFlags = StringFormatFlags.NoWrap };
-        path.AddString(text, _font, (int)fontStyle, emSize, PointF.Empty, format);
-        var bounds = path.GetBounds();
-        if (bounds.Width <= 0 || bounds.Height <= 0) return;
-
-        float scale = Math.Min(1f, Math.Min(box.Width / bounds.Width, box.Height / bounds.Height));
-        using var m = new Matrix();
-        m.Translate(box.X + box.Width / 2, box.Y + box.Height / 2);
-        m.Scale(scale, scale);
-        m.Translate(-(bounds.X + bounds.Width / 2), -(bounds.Y + bounds.Height / 2));
-        path.Transform(m);
-
-        using var brush = new SolidBrush(color);
-        g.FillPath(brush, path);
-    }
-
-    // -------------------------------------------------------------- helpers
-
-    private static FontFamily ResolveFont(string preferred)
-    {
-        string[] candidates = { preferred, "Microsoft JhengHei UI", "Microsoft JhengHei", "Microsoft YaHei UI", "Segoe UI" };
-        var installed = FontFamily.Families;
-        foreach (var name in candidates)
-        {
-            var match = installed.FirstOrDefault(f => string.Equals(f.Name, name, StringComparison.OrdinalIgnoreCase));
-            if (match is not null) return match;
-        }
-        return FontFamily.GenericSansSerif;
-    }
-
-    private static GraphicsPath RoundedRect(RectangleF r, float radius)
-    {
-        float d = radius * 2;
-        var p = new GraphicsPath();
-        p.AddArc(r.X, r.Y, d, d, 180, 90);
-        p.AddArc(r.Right - d, r.Y, d, d, 270, 90);
-        p.AddArc(r.Right - d, r.Bottom - d, d, d, 0, 90);
-        p.AddArc(r.X, r.Bottom - d, d, d, 90, 90);
-        p.CloseFigure();
-        return p;
-    }
+    private void DrawFittedText(Graphics g, string text, FontStyle style, float emSize, Color color, RectangleF box) =>
+        Drawing.DrawFittedText(g, _font, text, style, emSize, color, box);
 
     private static float EaseOutBack(float x)
     {

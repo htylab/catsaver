@@ -10,8 +10,10 @@ A cute Windows hydration reminder. CatSaver runs quietly in the system tray. At 
 
 - Background tray app; launching it shows no window.
 - Reminders start at every exact hour (10:00, 11:00, ...), last 16 minutes, then hide automatically.
-- Animated cat drawn in code (no image assets): it waves, blinks, swishes its tail, sips from a glass of water, and water drops float around it. The speech bubble shows the message and a countdown (「還剩 15:42」).
+- Animated cat: by default, [Google's Noto animated emoji](https://googlefonts.github.io/noto-emoji-animation/) cats, cycling 😺 → 😸 → 😻 → 😽 with little hops. Water drops and hearts float around it, and the speech bubble shows the message and a countdown (「還剩 15:42」). A hand-drawn cat that waves and holds a glass of water is also available (設定 → 貓咪樣式).
 - Dims every monitor and shows the cat on each one (configurable to the primary monitor only).
+- **「我在忙，先關掉」 button** under the cat: one click dismisses this reminder (the next one still comes on the hour). Clicking it doesn't take focus from the app you're typing in.
+- **Settings window** (double-click the tray icon, or tray → 設定…). 儲存 applies immediately, no restart. 預覽 shows the cat with the unsaved settings.
 - **Doesn't steal focus.** The overlay never takes keyboard focus, and by default mouse clicks pass through to the apps underneath.
 - Starts with Windows (installer checkbox, or toggle in the tray menu).
 - Tray menu (right-click the cat icon):
@@ -19,8 +21,8 @@ A cute Windows hydration reminder. CatSaver runs quietly in the system tray. At 
   - 關閉這次提醒: dismiss the current reminder
   - 暫停提醒: pause/resume reminders
   - 開機時自動啟動: start with Windows
-  - 開啟設定檔…: open the config file
-  - 重新啟動: restart (applies config changes)
+  - 設定…: open the settings window
+  - 重新啟動: restart
   - 結束: quit
 - If the PC wakes up or the app starts partway through a reminder window (say 10:05), the cat shows for the rest of that window (until 10:16).
 
@@ -33,11 +35,11 @@ Download from the GitHub Actions build artifacts or a GitHub Release. Either:
 
 Windows SmartScreen may warn the first time because the exe isn't code-signed. Click *More info → Run anyway*.
 
-To check the look without waiting for the next hour, double-click the tray icon, or run `CatSaver.exe --show`.
+To check the look without waiting for the next hour, choose tray → 現在顯示貓咪 (or 設定… → 預覽), or run `CatSaver.exe --show`. `CatSaver.exe --settings` opens the settings window on start.
 
 ## Configuration
 
-Settings live in `%APPDATA%\CatSaver\config.json`. The file is created with defaults on first run. Edit it (tray → 開啟設定檔…), save, then choose tray → 重新啟動.
+Use the settings window for normal changes. Everything is stored in `%APPDATA%\CatSaver\config.json` (created with defaults on first run). The settings window has a link to that folder. If you edit the file by hand, choose tray → 重新啟動 afterwards. Errors are logged to `error.log` in the same folder.
 
 ```json
 {
@@ -46,13 +48,15 @@ Settings live in `%APPDATA%\CatSaver\config.json`. The file is created with defa
   "message": "起來喝水了！",
   "subMessage": "離開電腦，伸展一下，喝杯水吧～",
   "showCountdown": true,
+  "showDismissButton": true,      // 「我在忙，先關掉」 button under the cat
+  "dismissButtonText": "我在忙，先關掉",
   "monitors": "all",              // "all" or "primary"
   "dimScreen": true,
   "dimOpacity": 0.35,             // 0.0 – 0.9
   "clickThrough": true,           // false = dimmed area blocks mouse clicks (keyboard is never blocked)
   "catScale": 1.0,                // 0.2 – 2.0
-  "catColor": "#F6A55A",          // fur colour
-  "animation": "wave",
+  "animation": "noto",            // "noto" (animated emoji cat) or "classic" (hand-drawn)
+  "catColor": "#F6A55A",          // fur colour of the hand-drawn cat
   "animationFps": 30,
   "fontFamily": "Microsoft JhengHei UI"
 }
@@ -81,19 +85,28 @@ CI (`.github/workflows/build.yml`) builds both files on `windows-latest` for eve
 ```
 src/CatSaver/
   Program.cs              entry point, single-instance mutex, restart handling
-  TrayApplication.cs      tray icon + menu, 1-second schedule check → show/hide overlay
+  TrayApplication.cs      tray icon + menu, 1-second schedule check → show/hide overlay, live config apply
+  SettingsForm.cs         settings window
   ReminderSchedule.cs     pure scheduling logic (interval / duration), unit-tested
   AppConfig.cs            JSON config with defaults + validation
   AutoStart.cs            HKCU\...\Run registry entry
   NativeMethods.cs        Win32 interop
   Overlay/
     OverlayManager.cs     creates the windows per monitor, animation loop, fade in/out, keeps topmost
-    CatWindow.cs          per-pixel-alpha layered window (UpdateLayeredWindow), click-through, no-activate
+    LayeredWindow.cs      base per-pixel-alpha window (UpdateLayeredWindow), topmost, no-activate
+    CatWindow.cs          the cat (click-through)
+    DismissButton.cs      「我在忙，先關掉」 button (clickable, still no focus steal)
     DimForm.cs            semi-transparent full-screen dimming layer
-    CatRenderer.cs        draws the cat, glass, drops and speech bubble with GDI+ (change the look here)
-  Assets/catsaver.ico     app/tray icon (regenerate with tools/make_icon.py)
+    CatRenderer.cs        draws the cat, drops/hearts and speech bubble with GDI+ (change the look here)
+    NotoCatAnimation.cs   plays the Noto emoji sprite sheets
+  Assets/Noto/            Noto cat sprite sheets + sprites.json (regenerate with tools/make_noto_sprites.py)
+  Assets/catsaver.ico     app/tray icon (also generated by tools/make_noto_sprites.py)
 tests/CatSaver.Tests      xUnit tests for the schedule (runs on any OS)
 installer/CatSaver.iss    Inno Setup script
 ```
 
-To change the animation, edit `Overlay/CatRenderer.cs`. Everything is drawn in an 800×880 logical canvas that is scaled to the screen, and the `Draw` method gets the elapsed time and remaining time for each frame.
+To use different Noto emoji, edit the `EMOJI` list in `tools/make_noto_sprites.py` and run it. Codepoints are listed at https://googlefonts.github.io/noto-emoji-animation/. To change the hand-drawn cat or the bubble, edit `Overlay/CatRenderer.cs`. Everything is drawn in an 800×880 logical canvas that is scaled to the screen, and the `Draw` method gets the elapsed time and remaining time for each frame.
+
+## Credits
+
+The cat animations and app icon use [Noto Emoji Animation](https://googlefonts.github.io/noto-emoji-animation/) by Google, licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). The frames were resized and converted to PNG sprite sheets.

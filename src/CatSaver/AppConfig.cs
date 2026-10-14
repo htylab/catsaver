@@ -25,6 +25,12 @@ public sealed class AppConfig
     /// <summary>Show the remaining time ("還剩 15:42") in the bubble.</summary>
     public bool ShowCountdown { get; set; } = true;
 
+    /// <summary>Show a "我在忙，先關掉" button under the cat that dismisses this reminder.</summary>
+    public bool ShowDismissButton { get; set; } = true;
+
+    /// <summary>Text on the dismiss button.</summary>
+    public string DismissButtonText { get; set; } = "我在忙，先關掉";
+
     /// <summary>"all" = cat + dimming on every monitor, "primary" = primary monitor only.</summary>
     public string Monitors { get; set; } = "all";
 
@@ -43,11 +49,14 @@ public sealed class AppConfig
     /// <summary>Size multiplier for the cat (1.0 ≈ 70% of screen height).</summary>
     public double CatScale { get; set; } = 1.0;
 
-    /// <summary>Fur colour as #RRGGBB.</summary>
+    /// <summary>Fur colour as #RRGGBB (hand-drawn "classic" cat only).</summary>
     public string CatColor { get; set; } = "#F6A55A";
 
-    /// <summary>Animation style. Currently: "wave" (waves a paw and holds a glass of water).</summary>
-    public string Animation { get; set; } = "wave";
+    /// <summary>
+    /// Cat style: "noto" = Google's animated Noto cat emoji (cycles through expressions),
+    /// "classic" = hand-drawn cat that waves and holds a glass of water (uses catColor).
+    /// </summary>
+    public string Animation { get; set; } = "noto";
 
     /// <summary>Frames per second for the animation.</summary>
     public int AnimationFps { get; set; } = 30;
@@ -116,10 +125,14 @@ public sealed class AppConfig
         AnimationFps = Math.Clamp(AnimationFps, 5, 60);
         Message ??= "";
         SubMessage ??= "";
+        if (string.IsNullOrWhiteSpace(DismissButtonText)) DismissButtonText = "我在忙，先關掉";
         Monitors = string.Equals(Monitors, "primary", StringComparison.OrdinalIgnoreCase) ? "primary" : "all";
         if (string.IsNullOrWhiteSpace(FontFamily)) FontFamily = "Microsoft JhengHei UI";
-        if (string.IsNullOrWhiteSpace(Animation)) Animation = "wave";
+        Animation = string.Equals(Animation, "classic", StringComparison.OrdinalIgnoreCase) ? "classic" : "noto";
     }
+
+    /// <summary>Copy (all members are values/strings), so the settings window can edit without touching the live config.</summary>
+    public AppConfig Clone() => (AppConfig)MemberwiseClone();
 
     public ReminderSchedule CreateSchedule() =>
         new(TimeSpan.FromMinutes(IntervalMinutes), TimeSpan.FromMinutes(DurationMinutes));
