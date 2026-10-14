@@ -26,10 +26,14 @@ internal sealed class SpriteCatalog
         public double Speed { get; set; }
         /// <summary>Horizontal centre of the cat's body as a fraction of the frame width (to line clips up).</summary>
         public double AnchorX { get; set; } = 0.5;
-        /// <summary>Sit-down clips: the frame where sitting starts (standing up plays from the end back to here).</summary>
+        /// <summary>Sit-down clips: the frame where sitting starts (standing up plays from the end back to here).
+        /// Stand-up clips: the frame where the cat has stood up and starts walking.</summary>
         public int WalkFrames { get; set; }
         /// <summary>Sit-down clips: true if the cat walks (in place) before sitting, so it should keep moving.</summary>
         public bool Walks { get; set; } = true;
+        /// <summary>Stand-up clips: the cat's centre (fraction of the frame width) in the first frame and while walking off.</summary>
+        public double StartAnchorX { get; set; } = 0.5;
+        public double EndAnchorX { get; set; } = 0.5;
 
         public double Seconds => Frames * FrameMs / 1000.0;
 
@@ -61,6 +65,8 @@ internal sealed class SpriteCatalog
         public List<string> Acts { get; set; } = new();
         /// <summary>Real-cat sets: the cat walking in and sitting down (also played backwards to stand up).</summary>
         public List<string> SitDowns { get; set; } = new();
+        /// <summary>Real-cat sets: the cat getting up and walking off (else a sit-down clip is played backwards).</summary>
+        public List<string> StandUps { get; set; } = new();
 
         public bool IsReal => Walkers.Count > 0;
     }
@@ -89,7 +95,8 @@ internal sealed class SpriteCatalog
         // Drop anything that references a missing sheet.
         Sets = parts.SelectMany(p => p.Catalog.Sets)
             .Where(s => s.Emoji.Count > 0 && s.Emoji.All(sheets.ContainsKey) && s.Walkers.All(sheets.ContainsKey)
-                        && s.Acts.All(sheets.ContainsKey) && s.SitDowns.All(sheets.ContainsKey))
+                        && s.Acts.All(sheets.ContainsKey) && s.SitDowns.All(sheets.ContainsKey)
+                        && s.StandUps.All(sheets.ContainsKey))
             .ToList();
         Props = parts.SelectMany(p => p.Catalog.Props).Where(sheets.ContainsKey).ToList();
     }

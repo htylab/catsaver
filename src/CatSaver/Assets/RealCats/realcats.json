@@ -10,7 +10,7 @@
       "frameMs": 42,
       "pingPong": false,
       "anchorX": 0.552,
-      "speed": 0.643
+      "speed": 0.653
     },
     {
       "name": "real_orange_walk_to_sit",
@@ -22,8 +22,6 @@
       "frameMs": 83,
       "pingPong": false,
       "anchorX": 0.536,
-      "startAnchorX": 0.495,
-      "endAnchorX": 0.571,
       "walkFrames": 25,
       "walks": true
     },
@@ -37,8 +35,6 @@
       "frameMs": 83,
       "pingPong": false,
       "anchorX": 0.457,
-      "startAnchorX": 0.531,
-      "endAnchorX": 0.549,
       "walkFrames": 60,
       "walks": false
     },
@@ -96,6 +92,220 @@
       "frameMs": 100,
       "pingPong": false,
       "anchorX": 0.508
+    },
+    {
+      "name": "real_cat2_walk",
+      "frames": 20,
+      "columns": 8,
+      "size": 335,
+      "width": 472,
+      "height": 335,
+      "frameMs": 42,
+      "pingPong": false,
+      "anchorX": 0.519,
+      "speed": 0.694
+    },
+    {
+      "name": "real_cat2_walk_to_sit",
+      "frames": 79,
+      "columns": 8,
+      "size": 292,
+      "width": 489,
+      "height": 292,
+      "frameMs": 83,
+      "pingPong": false,
+      "anchorX": 0.505,
+      "walkFrames": 43,
+      "walks": true
+    },
+    {
+      "name": "real_cat2_stretch",
+      "frames": 88,
+      "columns": 8,
+      "size": 274,
+      "width": 477,
+      "height": 274,
+      "frameMs": 83,
+      "pingPong": false,
+      "anchorX": 0.448,
+      "walkFrames": 48,
+      "walks": false
+    },
+    {
+      "name": "real_cat2_sit_to_walk",
+      "frames": 79,
+      "columns": 8,
+      "size": 344,
+      "width": 586,
+      "height": 344,
+      "frameMs": 83,
+      "pingPong": false,
+      "anchorX": 0.444,
+      "walkFrames": 36,
+      "startAnchorX": 0.45,
+      "endAnchorX": 0.439
+    },
+    {
+      "name": "real_cat2_sit",
+      "frames": 40,
+      "columns": 8,
+      "size": 281,
+      "width": 236,
+      "height": 281,
+      "frameMs": 125,
+      "pingPong": true,
+      "anchorX": 0.471
+    },
+    {
+      "name": "real_cat2_meow",
+      "frames": 65,
+      "columns": 8,
+      "size": 283,
+      "width": 155,
+      "height": 283,
+      "frameMs": 100,
+      "pingPong": false,
+      "anchorX": 0.487
+    },
+    {
+      "name": "real_cat2_wave",
+      "frames": 65,
+      "columns": 8,
+      "size": 289,
+      "width": 265,
+      "height": 289,
+      "frameMs": 100,
+      "pingPong": false,
+      "anchorX": 0.297
+    },
+    {
+      "name": "real_cat2_head_tilt",
+      "frames": 51,
+      "columns": 8,
+      "size": 286,
+      "width": 241,
+      "height": 286,
+      "frameMs": 100,
+      "pingPong": false,
+      "anchorX": 0.342
+    },
+    {
+      "name": "real_cat2_drink",
+      "frames": 70,
+      "columns": 8,
+      "size": 241,
+      "width": 483,
+      "height": 241,
+      "frameMs": 100,
+      "pingPong": false,
+      "anchorX": 0.446
+    },
+    {
+      "name": "real_cat3_walk",
+      "frames": 15,
+      "columns": 8,
+      "size": 249,
+      "width": 489,
+      "height": 249,
+      "frameMs": 42,
+      "pingPong": false,
+      "anchorX": 0.546,
+      "speed": 0.914
+    },
+    {
+      "name": "real_cat3_walk_to_sit",
+      "frames": 79,
+      "columns": 8,
+      "size": 291,
+      "width": 496,
+      "height": 291,
+      "frameMs": 83,
+      "pingPong": false,
+      "anchorX": 0.544,
+      "walkFrames": 35,
+      "walks": true
+    },
+    {
+      "name": "real_cat3_stretch",
+      "frames": 88,
+      "columns": 8,
+      "size": 320,
+      "width": 519,
+      "height": 320,
+      "frameMs": 83,
+      "pingPong": false,
+      "anchorX": 0.441,
+      "walkFrames": 48,
+      "walks": false
+    },
+    {
+      "name": "real_cat3_sit_to_walk",
+      "frames": 79,
+      "columns": 8,
+      "size": 285,
+      "width": 562,
+      "height": 285,
+      "frameMs": 83,
+      "pingPong": false,
+      "anchorX": 0.539,
+      "walkFrames": 34,
+      "startAnchorX": 0.547,
+      "endAnchorX": 0.531
+    },
+    {
+      "name": "real_cat3_sit",
+      "frames": 40,
+      "columns": 8,
+      "size": 297,
+      "width": 255,
+      "height": 297,
+      "frameMs": 125,
+      "pingPong": true,
+      "anchorX": 0.549
+    },
+    {
+      "name": "real_cat3_meow",
+      "frames": 65,
+      "columns": 8,
+      "size": 298,
+      "width": 148,
+      "height": 298,
+      "frameMs": 100,
+      "pingPong": false,
+      "anchorX": 0.59
+    },
+    {
+      "name": "real_cat3_wave",
+      "frames": 65,
+      "columns": 8,
+      "size": 292,
+      "width": 301,
+      "height": 292,
+      "frameMs": 100,
+      "pingPong": false,
+      "anchorX": 0.753
+    },
+    {
+      "name": "real_cat3_head_tilt",
+      "frames": 51,
+      "columns": 8,
+      "size": 298,
+      "width": 159,
+      "height": 298,
+      "frameMs": 100,
+      "pingPong": false,
+      "anchorX": 0.428
+    },
+    {
+      "name": "real_cat3_drink",
+      "frames": 70,
+      "columns": 8,
+      "size": 270,
+      "width": 476,
+      "height": 270,
+      "frameMs": 100,
+      "pingPong": false,
+      "anchorX": 0.482
     }
   ],
   "sets": [
@@ -112,11 +322,58 @@
         "real_orange_walk_to_sit",
         "real_orange_stretch"
       ],
+      "standUps": [],
       "acts": [
         "real_orange_meow",
         "real_orange_wave_v2",
         "real_orange_head_tilt",
         "real_orange_drink"
+      ]
+    },
+    {
+      "id": "realcat2",
+      "name": "真貓三花（走過來陪你）",
+      "emoji": [
+        "real_cat2_sit"
+      ],
+      "walkers": [
+        "real_cat2_walk"
+      ],
+      "sitDowns": [
+        "real_cat2_walk_to_sit",
+        "real_cat2_stretch"
+      ],
+      "standUps": [
+        "real_cat2_sit_to_walk"
+      ],
+      "acts": [
+        "real_cat2_meow",
+        "real_cat2_wave",
+        "real_cat2_head_tilt",
+        "real_cat2_drink"
+      ]
+    },
+    {
+      "id": "realcat3",
+      "name": "真貓暹羅（走過來陪你）",
+      "emoji": [
+        "real_cat3_sit"
+      ],
+      "walkers": [
+        "real_cat3_walk"
+      ],
+      "sitDowns": [
+        "real_cat3_walk_to_sit",
+        "real_cat3_stretch"
+      ],
+      "standUps": [
+        "real_cat3_sit_to_walk"
+      ],
+      "acts": [
+        "real_cat3_meow",
+        "real_cat3_wave",
+        "real_cat3_head_tilt",
+        "real_cat3_drink"
       ]
     }
   ],
@@ -166,6 +423,114 @@
     },
     {
       "sprite": "real_orange_drink",
+      "pixabayId": null,
+      "author": "htylab (AI-generated)",
+      "url": ""
+    },
+    {
+      "sprite": "real_cat2_walk",
+      "pixabayId": null,
+      "author": "htylab (AI-generated)",
+      "url": ""
+    },
+    {
+      "sprite": "real_cat2_walk_to_sit",
+      "pixabayId": null,
+      "author": "htylab (AI-generated)",
+      "url": ""
+    },
+    {
+      "sprite": "real_cat2_stretch",
+      "pixabayId": null,
+      "author": "htylab (AI-generated)",
+      "url": ""
+    },
+    {
+      "sprite": "real_cat2_sit_to_walk",
+      "pixabayId": null,
+      "author": "htylab (AI-generated)",
+      "url": ""
+    },
+    {
+      "sprite": "real_cat2_sit",
+      "pixabayId": null,
+      "author": "htylab (AI-generated)",
+      "url": ""
+    },
+    {
+      "sprite": "real_cat2_meow",
+      "pixabayId": null,
+      "author": "htylab (AI-generated)",
+      "url": ""
+    },
+    {
+      "sprite": "real_cat2_wave",
+      "pixabayId": null,
+      "author": "htylab (AI-generated)",
+      "url": ""
+    },
+    {
+      "sprite": "real_cat2_head_tilt",
+      "pixabayId": null,
+      "author": "htylab (AI-generated)",
+      "url": ""
+    },
+    {
+      "sprite": "real_cat2_drink",
+      "pixabayId": null,
+      "author": "htylab (AI-generated)",
+      "url": ""
+    },
+    {
+      "sprite": "real_cat3_walk",
+      "pixabayId": null,
+      "author": "htylab (AI-generated)",
+      "url": ""
+    },
+    {
+      "sprite": "real_cat3_walk_to_sit",
+      "pixabayId": null,
+      "author": "htylab (AI-generated)",
+      "url": ""
+    },
+    {
+      "sprite": "real_cat3_stretch",
+      "pixabayId": null,
+      "author": "htylab (AI-generated)",
+      "url": ""
+    },
+    {
+      "sprite": "real_cat3_sit_to_walk",
+      "pixabayId": null,
+      "author": "htylab (AI-generated)",
+      "url": ""
+    },
+    {
+      "sprite": "real_cat3_sit",
+      "pixabayId": null,
+      "author": "htylab (AI-generated)",
+      "url": ""
+    },
+    {
+      "sprite": "real_cat3_meow",
+      "pixabayId": null,
+      "author": "htylab (AI-generated)",
+      "url": ""
+    },
+    {
+      "sprite": "real_cat3_wave",
+      "pixabayId": null,
+      "author": "htylab (AI-generated)",
+      "url": ""
+    },
+    {
+      "sprite": "real_cat3_head_tilt",
+      "pixabayId": null,
+      "author": "htylab (AI-generated)",
+      "url": ""
+    },
+    {
+      "sprite": "real_cat3_drink",
       "pixabayId": null,
       "author": "htylab (AI-generated)",
       "url": ""

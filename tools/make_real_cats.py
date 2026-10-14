@@ -9,7 +9,7 @@ Clips can also be local green-screen videos (e.g. ones you generated yourself):
 use {"file": "tools/source/my-cat.mp4", "author": "...", ...} instead of "id".
 See docs/cat-video-brief.md for what such videos should look like.
 
-Local clips (the project owner's AI-generated orange tabby) live in
+Local clips (the project owner's AI-generated cats) live in
 tools/source/. Pixabay downloads go to tools/.cache/ (git-ignored) and are not
 committed. Only the processed, background-removed sprite sheets go into
 src/CatSaver/Assets/RealCats/. Videos are under the Pixabay Content License
@@ -31,23 +31,64 @@ ROOT = Path(__file__).resolve().parent.parent
 CACHE = ROOT / "tools" / ".cache"
 OUT = ROOT / "src" / "CatSaver" / "Assets" / "RealCats"
 
-# role "walk": a cat walking in place, facing right; the app moves it across the screen.
-# role "sit":  a cat idling in place; played forward then backward (ping-pong).
-# role "act":  the cat doing something (meowing, waving, drinking); one is played now and then.
-# role "sitdown": the cat arriving and sitting down (also played backwards to stand up).
-#   "walks": False if the cat doesn't walk first (e.g. stretches); "sitStart": seconds where sitting starts.
-CLIPS = [
-    # One AI-generated orange tabby (by the project owner) in several clips, all
-    # framed alike, so one shared "scale" keeps the cat the same size in every clip.
-    {"file": "tools/source/orange-walk.mp4", "role": "walk", "fps": 24},
-    {"file": "tools/source/orange-walk-to-sit.mp4", "role": "sitdown", "fps": 12},
-    # Stops, stretches, then sits: doesn't walk, so the cat stays put while it plays.
-    {"file": "tools/source/orange-stretch.mp4", "role": "sitdown", "fps": 12, "walks": False, "sitStart": 5.0},
-    {"file": "tools/source/orange-sit.mp4", "role": "sit", "fps": 8, "start": 0.0, "length": 5.0},
-    {"file": "tools/source/orange-meow.mp4", "role": "act", "fps": 10, "start": 0.0, "length": 6.5},
-    {"file": "tools/source/orange-wave-v2.mp4", "role": "act", "fps": 10, "start": 0.0, "length": 6.5},
-    {"file": "tools/source/orange-head-tilt.mp4", "role": "act", "fps": 10, "start": 0.0, "length": 5.1},
-    {"file": "tools/source/orange-drink.mp4", "role": "act", "fps": 10, "start": 0.5, "length": 7.0},
+# Each cat is a list of clips of the same cat. Roles:
+# "walk":    walking in place, facing right; the app moves it across the screen.
+# "sit":     idling in place; played forward then backward (ping-pong).
+# "act":     the sitting cat doing something (meowing, waving, drinking); one per visit.
+# "sitdown": arriving and sitting down (played backwards to stand up if the cat has no "standup").
+#            "walks": False if the cat doesn't walk first (e.g. stretches); "sitStart": seconds where sitting starts.
+# "standup": getting up from sitting and walking off; "walkStart": seconds where walking starts.
+# "fit": "auto" sizes every clip to match the walk clip (for clips framed differently):
+#   the first walking sit-down links walking and sitting size, then sitting clips match
+#   the sitting size and walking/standing clips the walking size. Without it the clips
+#   share one SCALE (all framed alike). "size": extra factor for clips that can't be
+#   matched (e.g. drinking, a pose that's in no other clip).
+CATS = [
+    {
+        # The project owner's AI-generated orange tabby; all clips framed alike.
+        "id": "realcat", "name": "真貓橘子（走過來陪你）", "prefix": "orange",
+        "clips": [
+            {"file": "tools/source/orange-walk.mp4", "role": "walk", "fps": 24},
+            {"file": "tools/source/orange-walk-to-sit.mp4", "role": "sitdown", "fps": 12},
+            # Stops, stretches, then sits: doesn't walk, so the cat stays put while it plays.
+            {"file": "tools/source/orange-stretch.mp4", "role": "sitdown", "fps": 12, "walks": False, "sitStart": 5.0},
+            {"file": "tools/source/orange-sit.mp4", "role": "sit", "fps": 8, "start": 0.0, "length": 5.0},
+            {"file": "tools/source/orange-meow.mp4", "role": "act", "fps": 10, "start": 0.0, "length": 6.5},
+            {"file": "tools/source/orange-wave-v2.mp4", "role": "act", "fps": 10, "start": 0.0, "length": 6.5},
+            {"file": "tools/source/orange-head-tilt.mp4", "role": "act", "fps": 10, "start": 0.0, "length": 5.1},
+            {"file": "tools/source/orange-drink.mp4", "role": "act", "fps": 10, "start": 0.5, "length": 7.0},
+        ],
+    },
+    {
+        # AI-generated calico (三花), by the project owner. Clips are framed differently.
+        "id": "realcat2", "name": "真貓三花（走過來陪你）", "fit": "auto",
+        "clips": [
+            {"file": "tools/source/cat2-walk.mp4", "role": "walk", "fps": 24},
+            {"file": "tools/source/cat2-walk-to-sit.mp4", "role": "sitdown", "fps": 12, "sitStart": 3.6},
+            {"file": "tools/source/cat2-stretch.mp4", "role": "sitdown", "fps": 12, "walks": False, "sitStart": 4.0},
+            {"file": "tools/source/cat2-sit-to-walk.mp4", "role": "standup", "fps": 12, "walkStart": 3.0},
+            {"file": "tools/source/cat2-sit.mp4", "role": "sit", "fps": 8, "start": 0.0, "length": 5.0},
+            {"file": "tools/source/cat2-meow.mp4", "role": "act", "fps": 10, "start": 0.0, "length": 6.5},
+            {"file": "tools/source/cat2-wave.mp4", "role": "act", "fps": 10, "start": 0.0, "length": 6.5},
+            {"file": "tools/source/cat2-head-tilt.mp4", "role": "act", "fps": 10, "start": 0.0, "length": 5.1},
+            {"file": "tools/source/cat2-drink.mp4", "role": "act", "fps": 10, "start": 0.5, "length": 7.0, "size": 0.8},
+        ],
+    },
+    {
+        # AI-generated Siamese (暹羅), by the project owner.
+        "id": "realcat3", "name": "真貓暹羅（走過來陪你）", "fit": "auto",
+        "clips": [
+            {"file": "tools/source/cat3-walk.mp4", "role": "walk", "fps": 24},
+            {"file": "tools/source/cat3-walk-to-sit.mp4", "role": "sitdown", "fps": 12, "sitStart": 2.9},
+            {"file": "tools/source/cat3-stretch.mp4", "role": "sitdown", "fps": 12, "walks": False, "sitStart": 4.0},
+            {"file": "tools/source/cat3-sit-to-walk.mp4", "role": "standup", "fps": 12, "walkStart": 2.8},
+            {"file": "tools/source/cat3-sit.mp4", "role": "sit", "fps": 8, "start": 0.0, "length": 5.0},
+            {"file": "tools/source/cat3-meow.mp4", "role": "act", "fps": 10, "start": 0.0, "length": 6.5},
+            {"file": "tools/source/cat3-wave.mp4", "role": "act", "fps": 10, "start": 0.0, "length": 6.5},
+            {"file": "tools/source/cat3-head-tilt.mp4", "role": "act", "fps": 10, "start": 0.0, "length": 5.1},
+            {"file": "tools/source/cat3-drink.mp4", "role": "act", "fps": 10, "start": 0.5, "length": 7.0, "size": 1.0},
+        ],
+    },
 ]
 COLUMNS = 8
 SCALE = 0.4            # source pixels -> sprite pixels, shared by all clips
@@ -101,8 +142,46 @@ def extract(video, clip, tmp):
         trim = ["-ss", str(clip["start"]), "-t", str(clip["length"])]
     subprocess.run(["ffmpeg", "-v", "error", "-y", *trim, "-i", str(video), "-vf", f"fps={clip['fps']}",
                     str(Path(tmp) / "%04d.png")], check=True)
-    lo, hi = clip.get("key", (18, 60))
-    return [green_key(np.array(Image.open(p).convert("RGB")), lo, hi) for p in sorted(Path(tmp).glob("*.png"))]
+    raws = [np.array(Image.open(p).convert("RGB")) for p in sorted(Path(tmp).glob("*.png"))]
+    key = clip.get("key", (18, 60))
+    if key == "auto":
+        # Pale or gradient screens: key relative to how green the background really is.
+        border = np.concatenate([g.ravel() for f in raws[:: max(1, len(raws) // 6)]
+                                 for g in (greenness(f[:24]), greenness(f[:, :24]), greenness(f[:, -24:]))])
+        bg = float(np.percentile(border, 10))
+        key = (bg * 0.4, bg * 0.8)
+        print(f"  {Path(video).name}: background greenness {bg:.0f} -> key {key[0]:.0f}..{key[1]:.0f}")
+        return [despeckle(green_key(f, *key)) for f in raws]
+    return [green_key(f, *key) for f in raws]
+
+
+def despeckle(frame):
+    """Drops faint specks left on a pale or uneven screen: keeps only what is near solid cat."""
+    solid = Image.fromarray(((frame[..., 3] > 80) * 255).astype(np.uint8))
+    near = np.array(solid.filter(ImageFilter.MinFilter(5)).filter(ImageFilter.MaxFilter(13))) > 0
+    frame[~near] = 0
+    return frame
+
+
+def greenness(rgb):
+    f = rgb.astype(np.float32)
+    return f[..., 1] - np.maximum(f[..., 0], f[..., 2])
+
+
+def body_height(frames):
+    """
+    Size of the cat, robust to a raised tail: the tallest column of solid pixels
+    (back to paw for a walking cat, head to floor for a sitting one), median over frames.
+    """
+    return float(np.median([(f[..., 3] > 128).sum(axis=0).max() for f in frames]))
+
+
+def sitting_height(frames):
+    """Height of a sitting cat (ears to floor; its tail lies on the floor), median over frames."""
+    def rows(f):
+        r = np.nonzero((f[..., 3] > 128).sum(axis=1) >= 8)[0]
+        return r.max() - r.min()
+    return float(np.median([rows(f) for f in frames]))
 
 
 def best_walk_loop(frames, min_len=8, max_len=40):
@@ -199,67 +278,120 @@ def save_sheet(images, name):
     return w, h, path.stat().st_size
 
 
+def sit_start(clip, frames):
+    if "sitStart" in clip:
+        return min(len(frames) - 1, round(clip["sitStart"] * clip["fps"]))
+    # Sitting down raises the head: it starts where the cat starts getting taller.
+    heights = [np.ptp(np.nonzero(f[..., 3].max(axis=1) > 20)[0]) for f in frames]
+    walk_h = np.median(heights[:max(3, len(heights) // 5)])
+    return next((i for i, h in enumerate(heights) if h > walk_h * 1.06), len(frames) - 1)
+
+
+def fit_sizes(cat, clips):
+    """
+    For cats whose clips are framed differently: per-clip size factors that make the
+    cat as big as in the walk clip. Returns {clip index: factor} (walk clip = 1).
+    """
+    walk = next(i for i, (c, _) in enumerate(clips) if c["role"] == "walk")
+    W = body_height(clips[walk][1])
+    factors = {walk: 1.0}
+    sit_sizes = []  # the sitting cat's size, in walk-clip pixels
+    for i, (c, frames) in enumerate(clips):
+        if c["role"] == "sitdown" and c.get("walks", True):
+            stand = sit_start(c, frames)
+            factors[i] = W / body_height(frames[:max(3, stand // 2)])
+            sit_sizes.append(sitting_height(frames[-4:]) * factors[i])
+        if c["role"] == "standup":
+            go = round(c["walkStart"] * c["fps"])
+            sit_sizes.append(sitting_height(frames[:4]) * W / body_height(frames[go:]))
+    sit = float(np.exp(np.mean(np.log(sit_sizes))))
+    for i, (c, frames) in enumerate(clips):
+        if i in factors:
+            continue
+        if "size" in c:
+            factors[i] = c["size"]
+        elif c["role"] == "sitdown":
+            factors[i] = sit / sitting_height(frames[-4:])
+        elif c["role"] == "standup":
+            go = round(c["walkStart"] * c["fps"])
+            factors[i] = float(np.sqrt(sit / sitting_height(frames[:4]) * W / body_height(frames[go:])))
+        else:
+            # Sitting clips start (and end) in the plain sitting pose.
+            factors[i] = sit / sitting_height(frames[:3])
+    print(f"  {cat['id']}: walking {W:.0f} px, sitting {sit:.0f} px (estimates {[round(x) for x in sit_sizes]})")
+    return factors, W
+
+
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
     for old in OUT.glob("*.png"):
         old.unlink()
-    sprites, credits = [], []
-    roles = {"walk": [], "sitdown": [], "sit": [], "act": []}
-    walk_sprite, ground_speed = None, None
-    for clip in CLIPS:
-        name = f"real{clip['id']}" if "id" in clip else "real_" + Path(clip["file"]).stem.replace("-", "_")
-        video, meta = download(clip)
-        with tempfile.TemporaryDirectory() as tmp:
-            frames = extract(video, clip, tmp)
-        extra = {}
-        if clip["role"] == "walk":
-            shifts = paw_shifts(frames)
-            planted = shifts[(shifts > 2) & (shifts < 85)]
-            ground_speed = float(np.median(planted)) * clip["fps"]  # source px per second
-            print(f"{name}: planted paws slide {np.median(planted):.1f} px/frame -> {ground_speed:.0f} px/s")
-            s, n, err = best_walk_loop(frames)
-            frames = frames[s:s + n]
-            print(f"{name}: walk loop frames {s}..{s + n} (match error {err:.3f})")
-        if clip["role"] == "sitdown":
-            if "sitStart" in clip:
-                stand = min(len(frames) - 1, round(clip["sitStart"] * clip["fps"]))
-            else:
-                # Sitting down raises the head: it starts where the cat starts getting taller.
-                heights = [np.ptp(np.nonzero(f[..., 3].max(axis=1) > 20)[0]) for f in frames]
-                walk_h = np.median(heights[:max(3, len(heights) // 5)])
-                stand = next((i for i, h in enumerate(heights) if h > walk_h * 1.06), len(frames) - 1)
-            print(f"{name}: sits down from frame {stand} of {len(frames)}")
-        soften_edges(frames)
-        images = crop_and_scale(frames, clip.get("height"))
-        w, h, size = save_sheet(images, name)
-        print(f"{name}: {len(images)} frames {w}x{h}, {size // 1024} KB")
-        sprite = {"name": name, "frames": len(images), "columns": COLUMNS, "size": h, "width": w, "height": h,
-                  "frameMs": round(1000 / clip["fps"]), "pingPong": clip["role"] == "sit",
-                  "anchorX": round(anchor_x(images), 3)}
-        if clip["role"] == "sitdown":
-            sprite["startAnchorX"] = round(body_x(np.array(images[0])) / w, 3)
-            sprite["endAnchorX"] = round(body_x(np.array(images[-1])) / w, 3)
-            sprite["walkFrames"] = stand              # sitting starts here (standing up = reverse from the end to here)
-            sprite["walks"] = clip.get("walks", True)  # does the cat walk (in place) before sitting?
-        sprites.append(sprite)
-        if clip["role"] == "walk":
-            walk_sprite = sprite
-        roles[clip["role"]].append(name)
-        credits.append({"sprite": name, "pixabayId": clip.get("id"), "author": meta["user"] or AUTHOR, "url": meta["pageURL"]})
+    sprites, credits, sets = [], [], []
+    for cat in CATS:
+        clips = []
+        for clip in cat["clips"]:
+            clip = {"key": "auto" if cat.get("fit") == "auto" else (18, 60), **clip}
+            video, meta = download(clip)
+            with tempfile.TemporaryDirectory() as tmp:
+                clips.append((clip, extract(video, clip, tmp), meta))
+        if cat.get("fit") == "auto":
+            factors, walk_h = fit_sizes(cat, [(c, f) for c, f, _ in clips])
+            base = 210 / walk_h  # walking cat about 210 px tall in the sheet, like the orange cat
+        else:
+            factors, base = {i: 1.0 for i in range(len(clips))}, SCALE
+        roles = {"walk": [], "sitdown": [], "standup": [], "sit": [], "act": []}
+        walk_sprite, ground_speed, walk_scale = None, None, base
+        for i, (clip, frames, meta) in enumerate(clips):
+            name = f"real{clip['id']}" if "id" in clip else "real_" + Path(clip["file"]).stem.replace("-", "_")
+            scale = base * factors[i]
+            extra = {}
+            if clip["role"] == "walk":
+                shifts = paw_shifts(frames)
+                planted = shifts[(shifts > 2) & (shifts < 85)]
+                # Mean, not median: some generated videos repeat or skip a frame now and then.
+                ground_speed = float(np.mean(planted)) * clip["fps"]  # source px per second
+                walk_scale = scale
+                print(f"{name}: planted paws slide {np.mean(planted):.1f} px/frame -> {ground_speed:.0f} px/s")
+                s, n, err = best_walk_loop(frames)
+                frames = frames[s:s + n]
+                print(f"{name}: walk loop frames {s}..{s + n} (match error {err:.3f})")
+            if clip["role"] == "sitdown":
+                stand = sit_start(clip, frames)
+                print(f"{name}: sits down from frame {stand} of {len(frames)}")
+            if clip["role"] == "standup":
+                stand = min(len(frames) - 1, round(clip["walkStart"] * clip["fps"]))
+                print(f"{name}: walks from frame {stand} of {len(frames)}")
+            soften_edges(frames)
+            images = crop_and_scale(frames, clip.get("height"), scale)
+            w, h, size = save_sheet(images, name)
+            print(f"{name}: {len(images)} frames {w}x{h} (scale {scale:.3f}), {size // 1024} KB")
+            sprite = {"name": name, "frames": len(images), "columns": COLUMNS, "size": h, "width": w, "height": h,
+                      "frameMs": round(1000 / clip["fps"]), "pingPong": clip["role"] == "sit",
+                      "anchorX": round(anchor_x(images), 3)}
+            if clip["role"] == "sitdown":
+                sprite["walkFrames"] = stand              # sitting starts here (standing up = reverse from the end to here)
+                sprite["walks"] = clip.get("walks", True)  # does the cat walk (in place) before sitting?
+            if clip["role"] == "standup":
+                sprite["walkFrames"] = stand              # standing up is done here; from here on it walks (in place)
+                # The cat moves within the frame while getting up: where it sits at the
+                # start and where it walks at the end, to line up with the sit and walk clips.
+                sprite["startAnchorX"] = round(anchor_x(images[:3]), 3)
+                sprite["endAnchorX"] = round(anchor_x(images[stand:]), 3)
+            sprites.append(sprite)
+            if clip["role"] == "walk":
+                walk_sprite = sprite
+            roles[clip["role"]].append(name)
+            credits.append({"sprite": name, "pixabayId": clip.get("id"), "author": meta["user"] or AUTHOR, "url": meta["pageURL"]})
 
-    if walk_sprite is not None:
-        # Walk speed in body widths per second, measured from the planted paws so
-        # they don't slide when the app moves the cat across the screen.
-        walk_sprite["speed"] = round(ground_speed * SCALE / walk_sprite["width"], 3) if ground_speed else 0.4
-        print("walk speed", walk_sprite["speed"], "body widths/s")
+        if walk_sprite is not None:
+            # Walk speed in body widths per second, measured from the planted paws so
+            # they don't slide when the app moves the cat across the screen.
+            walk_sprite["speed"] = round(ground_speed * walk_scale / walk_sprite["width"], 3) if ground_speed else 0.4
+            print("walk speed", walk_sprite["speed"], "body widths/s")
+        sets.append({"id": cat["id"], "name": cat["name"], "emoji": roles["sit"], "walkers": roles["walk"],
+                     "sitDowns": roles["sitdown"], "standUps": roles["standup"], "acts": roles["act"]})
 
-    catalog = {
-        "sprites": sprites,
-        "sets": [{"id": "realcat", "name": "真貓橘子（走過來陪你）", "emoji": roles["sit"], "walkers": roles["walk"],
-                  "sitDowns": roles["sitdown"], "acts": roles["act"]}],
-        "props": [],
-        "credits": credits,
-    }
+    catalog = {"sprites": sprites, "sets": sets, "props": [], "credits": credits}
     (OUT / "realcats.json").write_text(json.dumps(catalog, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     print("total", sum(p.stat().st_size for p in OUT.glob("*.png")) // 1024, "KB")
 
