@@ -18,6 +18,7 @@ A cute Windows hydration reminder. CatSaver runs quietly in the system tray. At 
   - 🐈 **真貓橘子（走過來陪你）**: a real-looking orange tabby (AI-generated video) walks in across the whole screen and sits down under the bubble, sometimes with a big stretch first. It looks around, then meows, waves, tilts its head or drinks from a bowl. Then it gets up and walks off, and comes back from the other side
   - 🐈 **真貓三花（走過來陪你）**: the same routine with a calico cat
   - 🐈 **真貓暹羅（走過來陪你）**: the same routine with a Siamese cat
+  - 🐈 **真貓英短（走過來陪你）**: the same routine with a British Shorthair
 
   A drink (🧋 bubble tea, 🍵 tea or 💧 a water drop) bobs next to the cat. The cat arrives in one of three ways: pops up, drops in with a bounce, or peeks up from below. Water drops and hearts float around it, and the speech bubble shows the message and a countdown (「還剩 15:42」). You can pick a fixed set, or the hand-drawn cat that waves and holds a glass of water, under 設定 → 貓咪樣式.
 - Dims every monitor and shows the cat on each one (configurable to the primary monitor only).
@@ -38,7 +39,7 @@ A cute Windows hydration reminder. CatSaver runs quietly in the system tray. At 
   - 設定…: open the settings window (also: double-click the icon, or launch CatSaver.exe again)
   - 重新啟動: restart
   - 結束: quit
-- If the PC wakes up or the app starts partway through a reminder window (say 10:05), the cat shows for the rest of that window (until 10:10).
+- Starting the app never pops the cat up straight away. If it starts partway through a reminder window (say 10:05), it waits for the next one. If the PC wakes from sleep partway through a window, the cat shows for the rest of it (until 10:10).
 
 ## Install (end users)
 
@@ -73,7 +74,7 @@ Use the settings window for normal changes. Everything is stored in `%APPDATA%\C
   "dimOpacity": 0.35,             // 0.0 – 0.9
   "clickThrough": true,           // false = dimmed area blocks mouse clicks (keyboard is never blocked)
   "catScale": 1.0,                // 0.2 – 2.0
-  "animation": "random",          // "random", "happy", "drama", "cool", "bigcat", "realcat" (橘子), "realcat2" (三花), "realcat3" (暹羅) or "classic" (hand-drawn)
+  "animation": "random",          // "random", "happy", "drama", "cool", "bigcat", "realcat" (橘子), "realcat2" (三花), "realcat3" (暹羅), "realcat4" (英短) or "classic" (hand-drawn)
   "catColor": "#F6A55A",          // fur colour of the hand-drawn cat
   "animationFps": 30,
   "fontFamily": "Microsoft JhengHei UI"
@@ -135,7 +136,7 @@ To add a cat set or a drink, edit `SPRITES` / `SETS` / `PROPS` in `tools/make_no
 
 ## Credits
 
-The real cats (橘子, 三花 and 暹羅) come from AI-generated green-screen videos made by the project owner. They were background-removed, cropped and packed into sprite sheets with `tools/make_real_cats.py`. The source videos are in `tools/source/`, so the sprites can be rebuilt. The tool can also fetch green-screen clips from [Pixabay](https://pixabay.com/) through its API.
+The real cats (橘子, 三花, 暹羅 and 英短) come from AI-generated green-screen videos made by the project owner. They were background-removed, cropped and packed into sprite sheets with `tools/make_real_cats.py`. The source videos are in `tools/source/`, so the sprites can be rebuilt. The tool can also fetch green-screen clips from [Pixabay](https://pixabay.com/) through its API.
 
 To add your own cats (e.g. generated videos), see [docs/cat-video-brief.md](docs/cat-video-brief.md) and `tools/make_real_cats.py`.
 
@@ -143,7 +144,7 @@ The cat, lion, tiger and drink animations and the app icon use [Noto Emoji Anima
 
 ## License
 
-CatSaver is open source under the [MIT License](LICENSE). This covers the code, the hand-drawn cat, and the real cat sprites (橘子, 三花, 暹羅) made from the project owner's AI-generated videos. The Noto emoji sprites and the app icon are © Google, under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
+CatSaver is open source under the [MIT License](LICENSE). This covers the code, the hand-drawn cat, and the real cat sprites (橘子, 三花, 暹羅, 英短) made from the project owner's AI-generated videos. The Noto emoji sprites and the app icon are © Google, under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
 
 ## Code signing policy
 

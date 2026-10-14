@@ -49,9 +49,9 @@ CATS = [
         "id": "realcat", "name": "真貓橘子（走過來陪你）", "prefix": "orange",
         "clips": [
             {"file": "tools/source/orange-walk.mp4", "role": "walk", "fps": 24},
-            {"file": "tools/source/orange-walk-to-sit.mp4", "role": "sitdown", "fps": 12},
+            {"file": "tools/source/orange-walk-to-sit.mp4", "role": "sitdown", "fps": 10},
             # Stops, stretches, then sits: doesn't walk, so the cat stays put while it plays.
-            {"file": "tools/source/orange-stretch.mp4", "role": "sitdown", "fps": 12, "walks": False, "sitStart": 5.0},
+            {"file": "tools/source/orange-stretch.mp4", "role": "sitdown", "fps": 10, "walks": False, "sitStart": 5.0},
             {"file": "tools/source/orange-sit.mp4", "role": "sit", "fps": 8, "start": 0.0, "length": 5.0},
             {"file": "tools/source/orange-meow.mp4", "role": "act", "fps": 10, "start": 0.0, "length": 6.5},
             {"file": "tools/source/orange-wave-v2.mp4", "role": "act", "fps": 10, "start": 0.0, "length": 6.5},
@@ -64,9 +64,9 @@ CATS = [
         "id": "realcat2", "name": "真貓三花（走過來陪你）", "fit": "auto",
         "clips": [
             {"file": "tools/source/cat2-walk.mp4", "role": "walk", "fps": 24},
-            {"file": "tools/source/cat2-walk-to-sit.mp4", "role": "sitdown", "fps": 12, "sitStart": 3.6},
-            {"file": "tools/source/cat2-stretch.mp4", "role": "sitdown", "fps": 12, "walks": False, "sitStart": 4.0},
-            {"file": "tools/source/cat2-sit-to-walk.mp4", "role": "standup", "fps": 12, "walkStart": 3.0},
+            {"file": "tools/source/cat2-walk-to-sit.mp4", "role": "sitdown", "fps": 10, "sitStart": 3.6},
+            {"file": "tools/source/cat2-stretch.mp4", "role": "sitdown", "fps": 10, "walks": False, "sitStart": 4.0},
+            {"file": "tools/source/cat2-sit-to-walk.mp4", "role": "standup", "fps": 10, "walkStart": 3.0},
             {"file": "tools/source/cat2-sit.mp4", "role": "sit", "fps": 8, "start": 0.0, "length": 5.0},
             {"file": "tools/source/cat2-meow.mp4", "role": "act", "fps": 10, "start": 0.0, "length": 6.5},
             {"file": "tools/source/cat2-wave.mp4", "role": "act", "fps": 10, "start": 0.0, "length": 6.5},
@@ -79,9 +79,9 @@ CATS = [
         "id": "realcat3", "name": "真貓暹羅（走過來陪你）", "fit": "auto",
         "clips": [
             {"file": "tools/source/cat3-walk.mp4", "role": "walk", "fps": 24},
-            {"file": "tools/source/cat3-walk-to-sit.mp4", "role": "sitdown", "fps": 12, "sitStart": 2.9},
-            {"file": "tools/source/cat3-stretch.mp4", "role": "sitdown", "fps": 12, "walks": False, "sitStart": 4.0},
-            {"file": "tools/source/cat3-sit-to-walk.mp4", "role": "standup", "fps": 12, "walkStart": 2.8},
+            {"file": "tools/source/cat3-walk-to-sit.mp4", "role": "sitdown", "fps": 10, "sitStart": 2.9},
+            {"file": "tools/source/cat3-stretch.mp4", "role": "sitdown", "fps": 10, "walks": False, "sitStart": 4.0},
+            {"file": "tools/source/cat3-sit-to-walk.mp4", "role": "standup", "fps": 10, "walkStart": 2.8},
             {"file": "tools/source/cat3-sit.mp4", "role": "sit", "fps": 8, "start": 0.0, "length": 5.0},
             {"file": "tools/source/cat3-meow.mp4", "role": "act", "fps": 10, "start": 0.0, "length": 6.5},
             {"file": "tools/source/cat3-wave.mp4", "role": "act", "fps": 10, "start": 0.0, "length": 6.5},
@@ -89,9 +89,27 @@ CATS = [
             {"file": "tools/source/cat3-drink.mp4", "role": "act", "fps": 10, "start": 0.5, "length": 7.0, "size": 1.0},
         ],
     },
+    {
+        # AI-generated British Shorthair (英短), by the project owner. The sitting clips
+        # have a vignetted screen (paler round the cat), so they get a softer key.
+        "id": "realcat4", "name": "真貓英短（走過來陪你）", "fit": "auto",
+        "clips": [
+            {"file": "tools/source/cat4-walk.mp4", "role": "walk", "fps": 24},
+            {"file": "tools/source/cat4-walk-to-sit.mp4", "role": "sitdown", "fps": 10, "sitStart": 3.5},
+            {"file": "tools/source/cat4-stretch.mp4", "role": "sitdown", "fps": 10, "walks": False, "sitStart": 4.2},
+            {"file": "tools/source/cat4-sit-to-walk.mp4", "role": "standup", "fps": 10, "walkStart": 3.2},
+            {"file": "tools/source/cat4-sit.mp4", "role": "sit", "fps": 8, "start": 0.0, "length": 5.0, "key": (25, 55)},
+            {"file": "tools/source/cat4-meow.mp4", "role": "act", "fps": 10, "start": 0.0, "length": 6.5, "key": (25, 55)},
+            {"file": "tools/source/cat4-wave.mp4", "role": "act", "fps": 10, "start": 0.0, "length": 6.5, "key": (25, 55)},
+            {"file": "tools/source/cat4-head-tilt.mp4", "role": "act", "fps": 10, "start": 0.0, "length": 5.1, "key": (25, 55)},
+            {"file": "tools/source/cat4-drink.mp4", "role": "act", "fps": 10, "start": 0.5, "length": 7.0, "size": 1.0},
+        ],
+    },
 ]
 COLUMNS = 8
-SCALE = 0.4            # source pixels -> sprite pixels, shared by all clips
+# Source pixels -> sprite pixels, shared by all clips. On a 1080p screen the sitting
+# cat is drawn ~370 px tall from ~230 px sprites: a bit soft, but keeps the app small.
+SCALE = 0.32
 AUTHOR = "htylab (AI-generated)"
 EDGE_FADE = 28         # px: soften a tail/paw that runs off the edge of the source frame
 
@@ -151,8 +169,8 @@ def extract(video, clip, tmp):
         bg = float(np.percentile(border, 10))
         key = (bg * 0.4, bg * 0.8)
         print(f"  {Path(video).name}: background greenness {bg:.0f} -> key {key[0]:.0f}..{key[1]:.0f}")
-        return [despeckle(green_key(f, *key)) for f in raws]
-    return [green_key(f, *key) for f in raws]
+    frames = [green_key(f, *key) for f in raws]
+    return [despeckle(f) for f in frames] if clip.get("despeckle") else frames
 
 
 def despeckle(frame):
@@ -330,13 +348,14 @@ def main():
     for cat in CATS:
         clips = []
         for clip in cat["clips"]:
-            clip = {"key": "auto" if cat.get("fit") == "auto" else (18, 60), **clip}
+            auto = cat.get("fit") == "auto"
+            clip = {"key": "auto" if auto else (18, 60), "despeckle": auto, **clip}
             video, meta = download(clip)
             with tempfile.TemporaryDirectory() as tmp:
                 clips.append((clip, extract(video, clip, tmp), meta))
         if cat.get("fit") == "auto":
             factors, walk_h = fit_sizes(cat, [(c, f) for c, f, _ in clips])
-            base = 210 / walk_h  # walking cat about 210 px tall in the sheet, like the orange cat
+            base = 170 / walk_h  # walking cat about 170 px tall in the sheet, like the orange cat
         else:
             factors, base = {i: 1.0 for i in range(len(clips))}, SCALE
         roles = {"walk": [], "sitdown": [], "standup": [], "sit": [], "act": []}

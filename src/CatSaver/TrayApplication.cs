@@ -99,7 +99,9 @@ internal sealed class TrayApplication : ApplicationContext
                 $"每 {_config.IntervalMinutes} 分鐘提醒你起來喝水。雙擊系統匣圖示可開啟設定，右鍵可暫停或結束。",
                 ToolTipIcon.Info);
 
+        // Don't greet the user with the cat when the app starts mid-reminder; wait for the next one.
         if (showImmediately) ShowNow();
+        else _state.SkipCurrentSlot(DateTime.Now);
         CheckSchedule();
     }
 
