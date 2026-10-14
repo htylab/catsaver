@@ -6,3 +6,4 @@ artifacts/
 tools/.cache/
 tools/source/*.mp4
 tools/source/*.mov
+__pycache__/
