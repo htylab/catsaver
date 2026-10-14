@@ -12,6 +12,13 @@ jobs:
     runs-on: windows-latest
     permissions:
       contents: write
+    env:
+      # Release tags are code-signed through SignPath (free for open source,
+      # certificate by SignPath Foundation) once the SIGNPATH_API_TOKEN and
+      # SIGNPATH_ORGANIZATION_ID secrets exist. Everything else builds unsigned.
+      SIGN: ${{ github.ref_type == 'tag' && secrets.SIGNPATH_API_TOKEN != '' }}
+      SIGNPATH_PROJECT: catsaver
+      SIGNPATH_POLICY: release-signing
     steps:
       - uses: actions/checkout@v4
 
@@ -22,12 +29,75 @@ jobs:
       - name: Install Inno Setup
         run: choco install innosetup -y --no-progress
 
-      - name: Build exe + installer
+      - name: Version
         shell: pwsh
         run: |
           $version = if ("${{ github.ref_type }}" -eq "tag") { "${{ github.ref_name }}".TrimStart("v") } else { "1.0.0" }
-          ./build.ps1 -Test -Installer -Version $version
+          "VERSION=$version" >> $env:GITHUB_ENV
 
+      - name: Test + build exe
+        shell: pwsh
+        run: ./build.ps1 -Test -Version $env:VERSION
+
+      # --- sign CatSaver.exe (release tags only) -------------------------------
+      - name: Upload unsigned exe for signing
+        if: env.SIGN == 'true'
+        id: unsigned-exe
+        uses: actions/upload-artifact@v4
+        with:
+          name: unsigned-exe
+          path: artifacts/publish/CatSaver.exe
+
+      - name: Sign exe (SignPath)
+        if: env.SIGN == 'true'
+        uses: signpath/github-action-submit-signing-request@v1
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ secrets.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ env.SIGNPATH_PROJECT }}
+          signing-policy-slug: ${{ env.SIGNPATH_POLICY }}
+          artifact-configuration-slug: exe
+          github-artifact-id: ${{ steps.unsigned-exe.outputs.artifact-id }}
+          wait-for-completion: true
+          output-artifact-directory: artifacts/signed-exe
+
+      - name: Use signed exe
+        if: env.SIGN == 'true'
+        shell: pwsh
+        run: Copy-Item artifacts/signed-exe/CatSaver.exe artifacts/publish/CatSaver.exe -Force
+
+      # --- installer (contains the signed exe on release tags) -----------------
+      - name: Build installer
+        shell: pwsh
+        run: ./build.ps1 -InstallerOnly -Version $env:VERSION
+
+      - name: Upload unsigned installer for signing
+        if: env.SIGN == 'true'
+        id: unsigned-installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: unsigned-installer
+          path: artifacts/CatSaver-Setup.exe
+
+      - name: Sign installer (SignPath)
+        if: env.SIGN == 'true'
+        uses: signpath/github-action-submit-signing-request@v1
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ secrets.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ env.SIGNPATH_PROJECT }}
+          signing-policy-slug: ${{ env.SIGNPATH_POLICY }}
+          artifact-configuration-slug: installer
+          github-artifact-id: ${{ steps.unsigned-installer.outputs.artifact-id }}
+          wait-for-completion: true
+          output-artifact-directory: artifacts/signed-installer
+
+      - name: Use signed installer
+        if: env.SIGN == 'true'
+        shell: pwsh
+        run: Copy-Item artifacts/signed-installer/CatSaver-Setup.exe artifacts/CatSaver-Setup.exe -Force
+
+      # --- publish ------------------------------------------------------------
       - uses: actions/upload-artifact@v4
         with:
           name: CatSaver
