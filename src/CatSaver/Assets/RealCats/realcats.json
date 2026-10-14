@@ -1,0 +1,107 @@
+{
+  "sprites": [
+    {
+      "name": "real318833",
+      "frames": 27,
+      "columns": 8,
+      "size": 240,
+      "width": 412,
+      "height": 240,
+      "frameMs": 67,
+      "pingPong": false,
+      "speed": 0.55
+    },
+    {
+      "name": "real359118",
+      "frames": 13,
+      "columns": 8,
+      "size": 240,
+      "width": 395,
+      "height": 240,
+      "frameMs": 67,
+      "pingPong": false,
+      "speed": 0.45
+    },
+    {
+      "name": "real116648",
+      "frames": 32,
+      "columns": 8,
+      "size": 320,
+      "width": 248,
+      "height": 320,
+      "frameMs": 125,
+      "pingPong": true,
+      "speed": 0
+    },
+    {
+      "name": "real116190",
+      "frames": 32,
+      "columns": 8,
+      "size": 320,
+      "width": 472,
+      "height": 320,
+      "frameMs": 125,
+      "pingPong": true,
+      "speed": 0
+    },
+    {
+      "name": "real302856",
+      "frames": 32,
+      "columns": 8,
+      "size": 320,
+      "width": 256,
+      "height": 320,
+      "frameMs": 125,
+      "pingPong": true,
+      "speed": 0
+    }
+  ],
+  "sets": [
+    {
+      "id": "realcat",
+      "name": "真貓散步（真實的貓）",
+      "emoji": [
+        "real116648",
+        "real116190",
+        "real302856"
+      ],
+      "walkers": [
+        "real318833",
+        "real359118"
+      ]
+    }
+  ],
+  "props": [],
+  "credits": [
+    {
+      "sprite": "real318833",
+      "pixabayId": 318833,
+      "author": "greenscreenfxs",
+      "url": "https://pixabay.com/videos/id-318833/"
+    },
+    {
+      "sprite": "real359118",
+      "pixabayId": 359118,
+      "author": "suniilsk",
+      "url": "https://pixabay.com/videos/id-359118/"
+    },
+    {
+      "sprite": "real116648",
+      "pixabayId": 116648,
+      "author": "BoVibol",
+      "url": "https://pixabay.com/videos/id-116648/"
+    },
+    {
+      "sprite": "real116190",
+      "pixabayId": 116190,
+      "author": "BoVibol",
+      "url": "https://pixabay.com/videos/id-116190/"
+    },
+    {
+      "sprite": "real302856",
+      "pixabayId": 302856,
+      "author": "Pixvault",
+      "url": "https://pixabay.com/videos/id-302856/"
+    }
+  ]
+}

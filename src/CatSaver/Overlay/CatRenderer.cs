@@ -30,6 +30,7 @@ internal sealed class CatRenderer : IDisposable
     // Per-reminder variation.
     private SpritePlayer? _cat;   // null = hand-drawn cat
     private SpritePlayer? _prop;
+    private bool _realCat;  // _cat is a real (video) cat rather than an emoji
     private string? _lastSetId;
     private Entrance _entrance;
 
@@ -71,6 +72,8 @@ internal sealed class CatRenderer : IDisposable
         _cat?.Dispose();
         _prop?.Dispose();
         _cat = _prop = null;
+        _realCat = false;
+        WalkerSheet = null;
         _entrance = (Entrance)Rng.Next(3);
 
         if (_catalog is null) return;
@@ -83,10 +86,25 @@ internal sealed class CatRenderer : IDisposable
             set = pool[Rng.Next(pool.Count)];
         }
         _lastSetId = set.Id;
-        _cat = new SpritePlayer(_catalog, set.Emoji);
+        if (set.IsReal)
+        {
+            // Real cats: one sitting cat in the middle, one walking cat along the bottom.
+            _realCat = true;
+            _cat = new SpritePlayer(_catalog, new[] { set.Emoji[Rng.Next(set.Emoji.Count)] });
+            WalkerSheet = _catalog.Sheets[set.Walkers[Rng.Next(set.Walkers.Count)]];
+        }
+        else
+        {
+            _cat = new SpritePlayer(_catalog, set.Emoji);
+        }
         if (_catalog.Props.Count > 0)
             _prop = new SpritePlayer(_catalog, new[] { _catalog.Props[Rng.Next(_catalog.Props.Count)] });
     }
+
+    /// <summary>The walking cat for this reminder (real-cat sets only), shown by <see cref="WalkerWindow"/>.</summary>
+    public SpriteCatalog.SheetInfo? WalkerSheet { get; private set; }
+
+    public SpriteCatalog? Catalog => _catalog;
 
     /// <summary>Frees decoded animation frames while no reminder is on screen.</summary>
     public void ReleaseResources()
@@ -149,9 +167,10 @@ internal sealed class CatRenderer : IDisposable
 
         var catState = g.Save();
         ApplyEntrance(g, t);
-        if (_prop is not null) DrawProp(g, t, _prop);
+        if (_prop is not null) DrawProp(g, t, _prop, _realCat ? Cx - 300 : Cx - 235);
         g.TranslateTransform(0, -PokeJump(t));
-        if (_cat is not null) DrawNotoCat(g, t, _cat);
+        if (_cat is not null && _realCat) DrawRealCat(g, t, _cat);
+        else if (_cat is not null) DrawNotoCat(g, t, _cat);
         else DrawCat(g, t);
         g.Restore(catState);
 
@@ -201,15 +220,31 @@ internal sealed class CatRenderer : IDisposable
     }
 
     /// <summary>The drink (bubble tea / tea / water drop) bobbing next to the cat.</summary>
-    private static void DrawProp(Graphics g, double t, SpritePlayer prop)
+    private static void DrawProp(Graphics g, double t, SpritePlayer prop, float x)
     {
         const float size = 175;
         float bob = (float)Math.Sin(t * 2.8) * 8f;
         var state = g.Save();
-        g.TranslateTransform(Cx - 235, Ground - size / 2 + 8 + bob);
+        g.TranslateTransform(x, Ground - size / 2 + 8 + bob);
         g.RotateTransform((float)Math.Sin(t * 1.9) * 6f);
         prop.Draw(g, t, new RectangleF(-size / 2, -size / 2, size, size));
         g.Restore(state);
+    }
+
+    // ------------------------------------------------------------- real cat
+
+    /// <summary>A background-removed video cat sitting in the middle (no cartoon squash/stretch).</summary>
+    private static void DrawRealCat(Graphics g, double t, SpritePlayer cat)
+    {
+        var sheet = cat.First;
+        if (sheet is null) return;
+        const float maxW = 470, maxH = 450;
+        float scale = Math.Min(maxW / sheet.FrameWidth, maxH / sheet.FrameHeight);
+        float w = sheet.FrameWidth * scale, h = sheet.FrameHeight * scale;
+
+        using (var shadow = new SolidBrush(Color.FromArgb(55, 0, 0, 0)))
+            g.FillEllipse(shadow, Cx - w * 0.42f, Ground - 14, w * 0.84f, 30);
+        cat.Draw(g, t, new RectangleF(Cx - w / 2, Ground - h + 6, w, h));
     }
 
     // ------------------------------------------------------------- noto cat
@@ -244,7 +279,7 @@ internal sealed class CatRenderer : IDisposable
         g.RotateTransform((float)Math.Sin(t * 1.6) * 4f);
         g.ScaleTransform(sx, sy);
         // Heart eyes for a moment after being clicked.
-        string? force = _pokeAt is double p0 && t - p0 < HeartEyesSeconds ? "1f63b" : null;
+        string? force = !_realCat && _pokeAt is double p0 && t - p0 < HeartEyesSeconds ? "1f63b" : null;
         noto.Draw(g, t, new RectangleF(-size / 2, -size + 22, size, size), force); // emoji has ~22px padding at the bottom
         g.Restore(state);
     }

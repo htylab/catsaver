@@ -28,6 +28,9 @@ internal sealed class SpritePlayer : IDisposable
         _clampEdges.SetWrapMode(WrapMode.TileFlipXY);
     }
 
+    /// <summary>The sheet currently playing (first one before any draw).</summary>
+    public SpriteCatalog.SheetInfo? First => _playlist.FirstOrDefault();
+
     private static double PlaySeconds(SpriteCatalog.SheetInfo s) =>
         Math.Max(1, Math.Round(SecondsPerSheet / s.LoopSeconds)) * s.LoopSeconds;
 
@@ -35,7 +38,7 @@ internal sealed class SpritePlayer : IDisposable
     /// Draws the frame for time <paramref name="t"/> (seconds) into <paramref name="dest"/>.
     /// <paramref name="forceSheet"/> (e.g. "1f63b") plays that sheet instead of the playlist.
     /// </summary>
-    public void Draw(Graphics g, double t, RectangleF dest, string? forceSheet = null)
+    public void Draw(Graphics g, double t, RectangleF dest, string? forceSheet = null, bool mirror = false)
     {
         SpriteCatalog.SheetInfo sheet;
         double local;
@@ -58,25 +61,35 @@ internal sealed class SpritePlayer : IDisposable
             local %= sheet.LoopSeconds;
         }
 
-        var bitmap = Load(sheet.Name);
+        var bitmap = Load(sheet);
         if (bitmap is null) return;
 
-        int frame = (int)(local * 1000 / sheet.FrameMs) % sheet.Frames;
-        var src = new Rectangle((frame % sheet.Columns) * sheet.Size, (frame / sheet.Columns) * sheet.Size, sheet.Size, sheet.Size);
+        int frame = sheet.FrameAt((int)(local * 1000 / sheet.FrameMs));
+        int fw = sheet.FrameWidth, fh = sheet.FrameHeight;
+        var src = new Rectangle((frame % sheet.Columns) * fw, (frame / sheet.Columns) * fh, fw, fh);
 
-        var oldMode = g.InterpolationMode;
+        var state = g.Save();
+        if (mirror)
+        {
+            // Flip horizontally around the destination's centre (e.g. a cat walking left).
+            float cx = dest.X + dest.Width / 2;
+            g.TranslateTransform(cx, 0);
+            g.ScaleTransform(-1, 1);
+            g.TranslateTransform(-cx, 0);
+        }
         g.InterpolationMode = InterpolationMode.HighQualityBicubic;
         g.DrawImage(bitmap, Rectangle.Round(dest), src.X, src.Y, src.Width, src.Height, GraphicsUnit.Pixel, _clampEdges);
-        g.InterpolationMode = oldMode;
+        g.Restore(state);
     }
 
-    private Bitmap? Load(string name)
+    private Bitmap? Load(SpriteCatalog.SheetInfo sheet)
     {
+        string name = sheet.Name;
         if (_loaded == name) return _bitmap;
         Release();
         try
         {
-            using var stream = typeof(SpritePlayer).Assembly.GetManifestResourceStream(SpriteCatalog.ResourcePrefix + name + ".png");
+            using var stream = typeof(SpritePlayer).Assembly.GetManifestResourceStream(sheet.ResourcePrefix + name + ".png");
             if (stream is null) return null;
             using var raw = new Bitmap(stream);
             // The PNGs are palette-based to stay small; convert once to the fastest

@@ -22,6 +22,8 @@
     <EmbeddedResource Include="Assets\catsaver.ico" LogicalName="CatSaver.catsaver.ico" />
     <!-- Noto animated emoji sprite sheets (CC BY 4.0, Google) – see tools/make_noto_sprites.py -->
     <EmbeddedResource Include="Assets\Noto\*.png;Assets\Noto\sprites.json" LogicalName="CatSaver.Noto.%(Filename)%(Extension)" />
+    <!-- Background-removed Pixabay cat videos (Pixabay Content License) – see tools/make_real_cats.py -->
+    <EmbeddedResource Include="Assets\RealCats\*.png;Assets\RealCats\realcats.json" LogicalName="CatSaver.RealCats.%(Filename)%(Extension)" />
   </ItemGroup>
 
 </Project>
