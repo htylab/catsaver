@@ -5,6 +5,8 @@ namespace CatSaver;
 internal static class Program
 {
     private const string MutexName = @"Local\CatSaver.SingleInstance";
+    /// <summary>A second launch sets this so the running instance opens its settings.</summary>
+    private const string ActivateEventName = @"Local\CatSaver.Activate";
 
     /// <summary>
     /// Command line:
@@ -32,7 +34,18 @@ internal static class Program
 
         if (!owned)
         {
-            // Already running in the tray – nothing to do.
+            // Already running in the tray: ask it to open the settings window, so
+            // launching the exe again visibly "does something".
+            if (EventWaitHandle.TryOpenExisting(ActivateEventName, out var activate))
+            {
+                using (activate) activate.Set();
+            }
+            else
+            {
+                ApplicationConfiguration.Initialize();
+                MessageBox.Show("CatSaver 已經在執行了，請找右下角系統匣的貓咪圖示。", "CatSaver",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
             return 0;
         }
 
@@ -44,11 +57,15 @@ internal static class Program
             // A background reminder app should never vanish because of one bad event:
             // log the error and keep running.
             Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
-            Application.ThreadException += (_, e) => LogError(e.Exception);
-            AppDomain.CurrentDomain.UnhandledException += (_, e) => LogError(e.ExceptionObject as Exception);
+            Application.ThreadException += (_, e) => Log.Error("UI thread", e.Exception);
+            AppDomain.CurrentDomain.UnhandledException += (_, e) => Log.Error("Unhandled", e.ExceptionObject as Exception);
 
+            // The exe may have been moved since autostart was turned on.
+            AutoStart.RefreshPathIfEnabled();
+
+            using var activate = new EventWaitHandle(false, EventResetMode.AutoReset, ActivateEventName);
             var config = AppConfig.Load(out string? configError);
-            using var app = new TrayApplication(config, showNow, showSettings, configError);
+            using var app = new TrayApplication(config, showNow, showSettings, configError, activate);
             Application.Run(app);
             restartRequested = app.RestartRequested;
         }
@@ -65,20 +82,5 @@ internal static class Program
             });
         }
         return 0;
-    }
-
-    /// <summary>Appends to %APPDATA%\CatSaver\error.log (best effort).</summary>
-    private static void LogError(Exception? ex)
-    {
-        try
-        {
-            Directory.CreateDirectory(AppConfig.ConfigDirectory);
-            File.AppendAllText(Path.Combine(AppConfig.ConfigDirectory, "error.log"),
-                $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] {ex}{Environment.NewLine}{Environment.NewLine}");
-        }
-        catch
-        {
-            // Nothing sensible left to do.
-        }
     }
 }

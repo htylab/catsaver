@@ -18,15 +18,18 @@ internal sealed class SettingsForm : Form
     private readonly TextBox _message = new() { Width = 300 };
     private readonly TextBox _subMessage = new() { Width = 300 };
     private readonly CheckBox _countdown = new() { Text = "在對話框顯示倒數計時", AutoSize = true };
-    private readonly CheckBox _dismissButton = new() { Text = "在貓咪下方顯示「先關掉」按鈕", AutoSize = true };
-    private readonly TextBox _dismissText = new() { Width = 300 };
+    private readonly CheckBox _drinkButton = new() { Text = "「我喝了！」（記錄杯數）", AutoSize = true };
+    private readonly TextBox _drinkText = new() { Width = 150 };
+    private readonly CheckBox _postpone = new() { Text = "簡報、全螢幕影片或遊戲時先不跳出，結束後再提醒", AutoSize = true };
+    private readonly CheckBox _dismissButton = new() { Text = "「先關掉」", AutoSize = true };
+    private readonly TextBox _dismissText = new() { Width = 150 };
     private readonly ComboBox _style = new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = 220 };
     private readonly ComboBox _monitors = new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = 160 };
     private readonly CheckBox _dim = new() { Text = "讓背景變暗", AutoSize = true };
-    private readonly TrackBar _dimOpacity = new() { Minimum = 0, Maximum = 90, TickFrequency = 10, Width = 220 };
+    private readonly TrackBar _dimOpacity = new() { Minimum = 0, Maximum = 90, TickFrequency = 10, Width = 220, AutoSize = false, Height = 30, TickStyle = TickStyle.None };
     private readonly Label _dimValue = new() { AutoSize = true, Anchor = AnchorStyles.Left };
     private readonly CheckBox _clickThrough = new() { Text = "滑鼠可以點到後面的視窗（建議開啟）", AutoSize = true };
-    private readonly TrackBar _catScale = new() { Minimum = 20, Maximum = 200, TickFrequency = 20, Width = 220 };
+    private readonly TrackBar _catScale = new() { Minimum = 20, Maximum = 200, TickFrequency = 20, Width = 220, AutoSize = false, Height = 30, TickStyle = TickStyle.None };
     private readonly Label _catScaleValue = new() { AutoSize = true, Anchor = AnchorStyles.Left };
     private readonly Button _catColor = new() { Width = 80, Height = 26, FlatStyle = FlatStyle.Flat };
     private readonly CheckBox _autoStart = new() { Text = "開機時自動啟動 CatSaver", AutoSize = true };
@@ -55,6 +58,7 @@ internal sealed class SettingsForm : Form
         _interval.ValueChanged += (_, _) => _duration.Maximum = _interval.Value;
         _dim.CheckedChanged += (_, _) => _dimOpacity.Enabled = _dim.Checked;
         _dismissButton.CheckedChanged += (_, _) => _dismissText.Enabled = _dismissButton.Checked;
+        _drinkButton.CheckedChanged += (_, _) => _drinkText.Enabled = _drinkButton.Checked;
         _dimOpacity.ValueChanged += (_, _) => _dimValue.Text = $"{_dimOpacity.Value}%";
         _catScale.ValueChanged += (_, _) => _catScaleValue.Text = $"{_catScale.Value}%";
         _catColor.Click += (_, _) => PickColor();
@@ -129,30 +133,29 @@ internal sealed class SettingsForm : Form
         Section("提醒時間");
         Row("每隔", _interval, Hint("分鐘提醒一次（60 = 每個整點）"));
         Row("貓咪停留", _duration, Hint("分鐘後自動消失"));
+        Row(null, _postpone);
 
         Section("文字");
         Row("主訊息", _message);
         Row("副訊息", _subMessage);
         Row(null, _countdown);
 
-        Section("「先關掉」按鈕");
-        Row(null, _dismissButton);
-        Row("按鈕文字", _dismissText);
+        Section("貓咪下方的按鈕");
+        Row("顯示", _drinkButton, _drinkText);
+        Row("顯示", _dismissButton, _dismissText);
 
         Section("外觀");
         Row("貓咪樣式", _style);
         Row("顯示在", _monitors);
-        Row(null, _dim);
-        Row("變暗程度", _dimOpacity, _dimValue);
+        Row("背景", _dim, _dimOpacity, _dimValue);
         Row(null, _clickThrough);
         Row("貓咪大小", _catScale, _catScaleValue);
         Row("毛色", _catColor, Hint("（手繪貓）"));
 
         Section("其他");
-        Row(null, _autoStart);
-        var openFolder = new LinkLabel { Text = "開啟設定檔資料夾（進階）", AutoSize = true };
+        var openFolder = new LinkLabel { Text = "開啟設定檔資料夾", AutoSize = true, Margin = new Padding(16, 6, 0, 0) };
         openFolder.LinkClicked += (_, _) => OpenConfigFolder();
-        Row(null, openFolder);
+        Row(null, _autoStart, openFolder);
 
         // Buttons
         var preview = new Button { Text = "預覽", AutoSize = true };
@@ -181,6 +184,24 @@ internal sealed class SettingsForm : Form
         grid.RowCount++;
 
         Controls.Add(grid);
+        _grid = grid;
+    }
+
+    private TableLayoutPanel? _grid;
+
+    protected override void OnLoad(EventArgs e)
+    {
+        base.OnLoad(e);
+        // On small screens, cap the height and let the contents scroll.
+        var work = Screen.FromControl(this).WorkingArea;
+        if (Height > work.Height && _grid is not null)
+        {
+            AutoSize = false;
+            _grid.Dock = DockStyle.Top;
+            AutoScroll = true;
+            Size = new Size(Width + SystemInformation.VerticalScrollBarWidth, work.Height - 20);
+            Location = new Point(Location.X, work.Top + 10);
+        }
     }
 
     // ------------------------------------------------------------- data flow
@@ -196,6 +217,10 @@ internal sealed class SettingsForm : Form
         _dismissButton.Checked = c.ShowDismissButton;
         _dismissText.Text = c.DismissButtonText;
         _dismissText.Enabled = c.ShowDismissButton;
+        _drinkButton.Checked = c.ShowDrinkButton;
+        _drinkText.Text = c.DrinkButtonText;
+        _drinkText.Enabled = c.ShowDrinkButton;
+        _postpone.Checked = c.PostponeWhenBusy;
         _monitors.SelectedIndex = c.Monitors == "primary" ? 1 : 0;
         _style.SelectedIndex = c.Animation == "classic" ? 1 : 0;
         _catColor.Enabled = _style.SelectedIndex == 1;
@@ -220,6 +245,9 @@ internal sealed class SettingsForm : Form
         c.ShowCountdown = _countdown.Checked;
         c.ShowDismissButton = _dismissButton.Checked;
         c.DismissButtonText = _dismissText.Text;
+        c.ShowDrinkButton = _drinkButton.Checked;
+        c.DrinkButtonText = _drinkText.Text;
+        c.PostponeWhenBusy = _postpone.Checked;
         c.Monitors = _monitors.SelectedIndex == 1 ? "primary" : "all";
         c.Animation = _style.SelectedIndex == 1 ? "classic" : "noto";
         c.DimScreen = _dim.Checked;

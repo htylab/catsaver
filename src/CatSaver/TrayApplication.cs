@@ -3,52 +3,72 @@ using CatSaver.Overlay;
 namespace CatSaver;
 
 /// <summary>
-/// Background app: a tray icon plus a once-per-second check of the schedule that
-/// shows/hides the cat overlay.
+/// Background app: a tray icon plus a once-per-second check (via
+/// <see cref="ReminderState"/>) that shows/hides the cat overlay.
 /// </summary>
 internal sealed class TrayApplication : ApplicationContext
 {
     private AppConfig _config;
-    private ReminderSchedule _schedule;
     private OverlayManager _overlay;
     private SettingsForm? _settingsForm;
+    private readonly ReminderState _state;
+    private readonly WaterLog _water;
     private readonly NotifyIcon _tray;
     private readonly System.Windows.Forms.Timer _scheduleTimer;
-    private readonly ToolStripMenuItem _pauseItem;
+    private readonly ToolStripMenuItem _statusItem;
+    private readonly ToolStripMenuItem _waterItem;
+    private readonly ToolStripMenuItem _resumeItem;
     private readonly ToolStripMenuItem _autoStartItem;
     private readonly Icon _icon;
-
-    private DateTime? _dismissedSlot;
-    private DateTime? _manualUntil;
-    private bool _paused;
+    private readonly SynchronizationContext _ui;
+    private RegisteredWaitHandle? _activationWait;
 
     /// <summary>Set when the user picks "重新啟動" so Program can relaunch after exit.</summary>
     public bool RestartRequested { get; private set; }
 
-    public TrayApplication(AppConfig config, bool showImmediately, bool showSettings, string? configError)
+    /// <param name="activateSignal">Set by a second launch of the exe; we respond by opening the settings.</param>
+    public TrayApplication(AppConfig config, bool showImmediately, bool showSettings, string? configError,
+        EventWaitHandle? activateSignal)
     {
+        _ui = SynchronizationContext.Current ?? new WindowsFormsSynchronizationContext();
         _config = config;
-        _schedule = config.CreateSchedule();
+        _state = new ReminderState(config.CreateSchedule()) { PostponeWhenBusy = config.PostponeWhenBusy };
+        _water = WaterLog.Load();
         _overlay = CreateOverlay(config);
         _icon = LoadIcon();
 
-        _pauseItem = new ToolStripMenuItem("暫停提醒", null, (_, _) => TogglePause()) { CheckOnClick = false };
+        _statusItem = new ToolStripMenuItem { Enabled = false };
+        _waterItem = new ToolStripMenuItem { Enabled = false };
+        _resumeItem = new ToolStripMenuItem("恢復提醒", null, (_, _) => Resume());
         _autoStartItem = new ToolStripMenuItem("開機時自動啟動", null, (_, _) => ToggleAutoStart());
 
+        var pauseItem = new ToolStripMenuItem("暫停提醒");
+        pauseItem.DropDownItems.Add(new ToolStripMenuItem("1 小時", null, (_, _) => Pause(DateTime.Now.AddHours(1))));
+        pauseItem.DropDownItems.Add(new ToolStripMenuItem("2 小時", null, (_, _) => Pause(DateTime.Now.AddHours(2))));
+        pauseItem.DropDownItems.Add(new ToolStripMenuItem("今天都不要提醒", null, (_, _) => Pause(DateTime.Today.AddDays(1))));
+
         var menu = new ContextMenuStrip();
+        menu.Items.Add(_statusItem);
+        menu.Items.Add(_waterItem);
+        menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add(new ToolStripMenuItem("現在顯示貓咪", null, (_, _) => ShowNow()));
         menu.Items.Add(new ToolStripMenuItem("關閉這次提醒", null, (_, _) => DismissCurrent()));
-        menu.Items.Add(_pauseItem);
+        menu.Items.Add(new ToolStripMenuItem("我喝了一杯水（+1）", null, (_, _) => Drink()));
+        menu.Items.Add(pauseItem);
+        menu.Items.Add(_resumeItem);
         menu.Items.Add(new ToolStripSeparator());
-        menu.Items.Add(_autoStartItem);
         menu.Items.Add(new ToolStripMenuItem("設定…", null, (_, _) => OpenSettings()));
+        menu.Items.Add(_autoStartItem);
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add(new ToolStripMenuItem("重新啟動", null, (_, _) => Restart()));
         menu.Items.Add(new ToolStripMenuItem("結束", null, (_, _) => ExitThread()));
         menu.Opening += (_, _) =>
         {
+            var now = DateTime.Now;
+            _statusItem.Text = StatusText(now);
+            _waterItem.Text = $"今天喝了 {_water.CupsOn(now)} 杯水";
+            _resumeItem.Visible = _state.IsPaused(now);
             _autoStartItem.Checked = SafeIsAutoStartEnabled();
-            _pauseItem.Checked = _paused;
         };
 
         _tray = new NotifyIcon
@@ -59,6 +79,12 @@ internal sealed class TrayApplication : ApplicationContext
             Visible = true,
         };
         _tray.DoubleClick += (_, _) => OpenSettings();
+
+        if (activateSignal is not null)
+        {
+            _activationWait = ThreadPool.RegisterWaitForSingleObject(activateSignal,
+                (_, _) => _ui.Post(_ => OpenSettings(), null), null, Timeout.Infinite, executeOnlyOnce: false);
+        }
 
         _scheduleTimer = new System.Windows.Forms.Timer { Interval = 1000 };
         _scheduleTimer.Tick += (_, _) => CheckSchedule();
@@ -81,8 +107,53 @@ internal sealed class TrayApplication : ApplicationContext
     {
         var overlay = new OverlayManager(config);
         overlay.DismissRequested += (_, _) => DismissCurrent();
+        overlay.DrinkRequested += (_, _) => Drink();
         return overlay;
     }
+
+    // ------------------------------------------------------------ schedule
+
+    private void CheckSchedule()
+    {
+        var now = DateTime.Now;
+        bool showing = _overlay.IsShowing;
+        // Only ask Windows when it matters: before a reminder would pop up.
+        bool busy = !showing && _config.PostponeWhenBusy && UserActivity.IsBusy();
+        var until = _state.Evaluate(now, showing, busy);
+
+        if (until is DateTime u)
+        {
+            if (showing) _overlay.UpdateEnd(u);
+            else _overlay.Show(u);
+        }
+        else if (showing)
+        {
+            _overlay.Hide();
+        }
+
+        UpdateTooltip(now);
+    }
+
+    private string StatusText(DateTime now)
+    {
+        if (_state.PausedUntil is DateTime p && now < p)
+            return p >= now.Date.AddDays(1) ? "今天不再提醒（已暫停）" : $"已暫停到 {p:HH:mm}";
+        if (_overlay.IsShowing)
+            return "提醒中：起來喝水吧！";
+        if (_state.IsDeferred)
+            return "等你忙完（簡報/全螢幕）再提醒";
+        return $"下次提醒 {_state.Schedule.NextStart(now):HH:mm}";
+    }
+
+    private void UpdateTooltip(DateTime now)
+    {
+        string text = $"CatSaver – {StatusText(now)}\n今天喝了 {_water.CupsOn(now)} 杯水";
+        // NotifyIcon.Text is limited to 127 characters.
+        if (text.Length > 127) text = text[..127];
+        if (_tray.Text != text) _tray.Text = text;
+    }
+
+    // ------------------------------------------------------------- actions
 
     /// <summary>The settings currently in effect (a copy, safe to edit).</summary>
     public AppConfig CurrentConfig => _config.Clone();
@@ -94,25 +165,65 @@ internal sealed class TrayApplication : ApplicationContext
     public void ApplyConfig(AppConfig config)
     {
         config.Normalize();
+        var now = DateTime.Now;
+        bool manual = _state.IsManual(now);
         _config = config;
-        _schedule = config.CreateSchedule();
+        _state.Schedule = config.CreateSchedule();
+        _state.PostponeWhenBusy = config.PostponeWhenBusy;
         _overlay.Dispose();
         _overlay = CreateOverlay(config);
-        if (_manualUntil is not null) _manualUntil = DateTime.Now.AddMinutes(config.DurationMinutes);
+        if (manual) _state.ShowNow(now);
         CheckSchedule();
     }
 
     /// <summary>Shows the cat right now for the configured duration.</summary>
     public void ShowNow()
     {
-        _manualUntil = DateTime.Now.AddMinutes(_config.DurationMinutes);
+        _state.ShowNow(DateTime.Now);
         CheckSchedule();
     }
 
     /// <summary>Ends a "show now" preview (scheduled reminders are unaffected).</summary>
     public void StopPreview()
     {
-        _manualUntil = null;
+        _state.StopManual();
+        CheckSchedule();
+    }
+
+    /// <summary>Hides the current reminder; the next one comes at the next slot as usual.</summary>
+    public void DismissCurrent()
+    {
+        _state.Dismiss(DateTime.Now);
+        CheckSchedule();
+    }
+
+    /// <summary>Records a cup of water. If the cat is up, it celebrates and leaves.</summary>
+    private void Drink()
+    {
+        var now = DateTime.Now;
+        int cups = _water.AddCup(now);
+        if (_overlay.IsShowing)
+        {
+            _overlay.Celebrate("好棒！", $"今天第 {cups} 杯水，繼續保持～");
+            _state.Dismiss(now);
+            CheckSchedule();
+        }
+        else
+        {
+            _tray.ShowBalloonTip(3000, "CatSaver", $"記錄好了！今天第 {cups} 杯水 💧", ToolTipIcon.Info);
+            UpdateTooltip(now);
+        }
+    }
+
+    private void Pause(DateTime until)
+    {
+        _state.Pause(until);
+        CheckSchedule();
+    }
+
+    private void Resume()
+    {
+        _state.Resume();
         CheckSchedule();
     }
 
@@ -128,60 +239,6 @@ internal sealed class TrayApplication : ApplicationContext
         _settingsForm.FormClosed += (_, _) => _settingsForm = null;
         _settingsForm.Show();
         _settingsForm.Activate();
-    }
-
-    private void CheckSchedule()
-    {
-        var now = DateTime.Now;
-        DateTime? until = null;
-
-        if (_manualUntil is DateTime manual && now < manual)
-        {
-            until = manual;
-        }
-        else
-        {
-            _manualUntil = null;
-            if (!_paused && _schedule.ActiveUntil(now) is DateTime end && _dismissedSlot != _schedule.SlotStart(now))
-                until = end;
-        }
-
-        if (until is DateTime u)
-        {
-            if (_overlay.IsShowing) _overlay.UpdateEnd(u);
-            else _overlay.Show(u);
-        }
-        else if (_overlay.IsShowing)
-        {
-            _overlay.Hide();
-        }
-
-        UpdateTooltip(now);
-    }
-
-    private void UpdateTooltip(DateTime now)
-    {
-        string text = _paused
-            ? "CatSaver – 已暫停"
-            : $"CatSaver – 下次提醒 {_schedule.NextStart(now):HH:mm}";
-        // NotifyIcon.Text is limited to 127 characters.
-        if (_tray.Text != text) _tray.Text = text.Length > 127 ? text[..127] : text;
-    }
-
-    /// <summary>Hides the current reminder; the next one comes at the next slot as usual.</summary>
-    public void DismissCurrent()
-    {
-        var now = DateTime.Now;
-        _manualUntil = null;
-        _dismissedSlot = _schedule.SlotStart(now);
-        CheckSchedule();
-    }
-
-    private void TogglePause()
-    {
-        _paused = !_paused;
-        if (_paused) _manualUntil = null;
-        CheckSchedule();
     }
 
     private void ToggleAutoStart()
@@ -217,6 +274,8 @@ internal sealed class TrayApplication : ApplicationContext
     protected override void ExitThreadCore()
     {
         _scheduleTimer.Stop();
+        _activationWait?.Unregister(null);
+        _activationWait = null;
         _settingsForm?.Close();
         _tray.Visible = false;
         _overlay.Dispose();

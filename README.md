@@ -12,16 +12,21 @@ A cute Windows hydration reminder. CatSaver runs quietly in the system tray. At 
 - Reminders start at every exact hour (10:00, 11:00, ...), last 16 minutes, then hide automatically.
 - Animated cat: by default, [Google's Noto animated emoji](https://googlefonts.github.io/noto-emoji-animation/) cats, cycling 😺 → 😸 → 😻 → 😽 with little hops. Water drops and hearts float around it, and the speech bubble shows the message and a countdown (「還剩 15:42」). A hand-drawn cat that waves and holds a glass of water is also available (設定 → 貓咪樣式).
 - Dims every monitor and shows the cat on each one (configurable to the primary monitor only).
-- **「我在忙，先關掉」 button** under the cat: one click dismisses this reminder (the next one still comes on the hour). Clicking it doesn't take focus from the app you're typing in.
+- **「我喝了！」 button** under the cat. It records a cup of water, the cat celebrates (「好棒！今天第 3 杯水」), then it leaves. Today's count is shown in the tray menu and tooltip, and is stored in `water.json`.
+- **「我在忙，先關掉」 button**: one click dismisses this reminder (the next one still comes on the hour). Neither button takes focus from the app you're typing in.
+- **Click the cat**: it jumps, gets heart eyes 😻 and bursts hearts. Only the cat itself is clickable; the rest of the overlay still lets clicks through.
+- **Postpones during presentations and full-screen apps** (PowerPoint slide show, full-screen video, games). The reminder shows once you're done, for the full duration.
 - **Settings window** (double-click the tray icon, or tray → 設定…). 儲存 applies immediately, no restart. 預覽 shows the cat with the unsaved settings.
 - **Doesn't steal focus.** The overlay never takes keyboard focus, and by default mouse clicks pass through to the apps underneath.
 - Starts with Windows (installer checkbox, or toggle in the tray menu).
 - Tray menu (right-click the cat icon):
-  - 現在顯示貓咪: show the cat now (also double-click the icon)
+  - status line: next reminder / paused until / waiting for your presentation, plus today's cups of water
+  - 現在顯示貓咪: show the cat now
   - 關閉這次提醒: dismiss the current reminder
-  - 暫停提醒: pause/resume reminders
+  - 我喝了一杯水（+1）: record a cup without waiting for the cat
+  - 暫停提醒 ▸ 1 小時 / 2 小時 / 今天都不要提醒 (resumes on its own), and 恢復提醒
   - 開機時自動啟動: start with Windows
-  - 設定…: open the settings window
+  - 設定…: open the settings window (also: double-click the icon, or launch CatSaver.exe again)
   - 重新啟動: restart
   - 結束: quit
 - If the PC wakes up or the app starts partway through a reminder window (say 10:05), the cat shows for the rest of that window (until 10:16).
@@ -39,7 +44,7 @@ To check the look without waiting for the next hour, choose tray → 現在顯�
 
 ## Configuration
 
-Use the settings window for normal changes. Everything is stored in `%APPDATA%\CatSaver\config.json` (created with defaults on first run). The settings window has a link to that folder. If you edit the file by hand, choose tray → 重新啟動 afterwards. Errors are logged to `error.log` in the same folder.
+Use the settings window for normal changes. Everything is stored in `%APPDATA%\CatSaver\config.json` (created with defaults on first run). The settings window has a link to that folder. If you edit the file by hand, choose tray → 重新啟動 afterwards. Errors are logged to `error.log` in the same folder (rotated at 512 KB). If the exe is moved, the start-with-Windows entry is updated to the new path on the next launch.
 
 ```json
 {
@@ -48,6 +53,9 @@ Use the settings window for normal changes. Everything is stored in `%APPDATA%\C
   "message": "起來喝水了！",
   "subMessage": "離開電腦，伸展一下，喝杯水吧～",
   "showCountdown": true,
+  "postponeWhenBusy": true,       // wait while presenting / full-screen
+  "showDrinkButton": true,        // 「我喝了！」 button (counts cups)
+  "drinkButtonText": "我喝了！",
   "showDismissButton": true,      // 「我在忙，先關掉」 button under the cat
   "dismissButtonText": "我在忙，先關掉",
   "monitors": "all",              // "all" or "primary"
@@ -88,6 +96,10 @@ src/CatSaver/
   TrayApplication.cs      tray icon + menu, 1-second schedule check → show/hide overlay, live config apply
   SettingsForm.cs         settings window
   ReminderSchedule.cs     pure scheduling logic (interval / duration), unit-tested
+  ReminderState.cs        show / dismiss / pause / postpone-while-busy decisions, unit-tested
+  UserActivity.cs         "is the user presenting / full-screen?" (SHQueryUserNotificationState)
+  WaterLog.cs             cups of water per day (water.json)
+  Log.cs                  error.log with rotation
   AppConfig.cs            JSON config with defaults + validation
   AutoStart.cs            HKCU\...\Run registry entry
   NativeMethods.cs        Win32 interop
@@ -95,13 +107,14 @@ src/CatSaver/
     OverlayManager.cs     creates the windows per monitor, animation loop, fade in/out, keeps topmost
     LayeredWindow.cs      base per-pixel-alpha window (UpdateLayeredWindow), topmost, no-activate
     CatWindow.cs          the cat (click-through)
-    DismissButton.cs      「我在忙，先關掉」 button (clickable, still no focus steal)
+    PillButton.cs         「我喝了！」/「我在忙，先關掉」 buttons (clickable, still no focus steal)
+    CatHitArea.cs         invisible click target over the cat (for the jump + hearts)
     DimForm.cs            semi-transparent full-screen dimming layer
     CatRenderer.cs        draws the cat, drops/hearts and speech bubble with GDI+ (change the look here)
     NotoCatAnimation.cs   plays the Noto emoji sprite sheets
   Assets/Noto/            Noto cat sprite sheets + sprites.json (regenerate with tools/make_noto_sprites.py)
   Assets/catsaver.ico     app/tray icon (also generated by tools/make_noto_sprites.py)
-tests/CatSaver.Tests      xUnit tests for the schedule (runs on any OS)
+tests/CatSaver.Tests      xUnit tests for the schedule and reminder state (runs on any OS)
 installer/CatSaver.iss    Inno Setup script
 ```
 
