@@ -43,7 +43,7 @@ A cute Windows hydration reminder. CatSaver runs quietly in the system tray. At 
 
 ## Install (end users)
 
-Download from the GitHub Actions build artifacts or a GitHub Release. Either:
+Download from the [latest GitHub Release](https://github.com/htylab/catsaver/releases/latest), or from the GitHub Actions build artifacts. Either:
 
 - **`CatSaver-Setup.exe`** (recommended): a per-user install with no admin rights needed. It offers "開機時自動啟動" (checked by default) and launches CatSaver when it finishes.
 - **`CatSaver.exe`**: a portable, self-contained single exe that doesn't need the .NET runtime. Put it anywhere and run it. To start it with Windows, right-click the tray icon and choose 「開機時自動啟動」.
@@ -98,6 +98,8 @@ dotnet test tests\CatSaver.Tests
 ```
 
 CI (`.github/workflows/build.yml`) builds both files on `windows-latest` for every push and PR and uploads them as the **CatSaver** artifact. Pushing a `v*` tag (e.g. `v1.0.0`) also attaches them to a GitHub Release.
+
+To make a release by hand: on GitHub, open **Actions → release → Run workflow**, pick the branch (usually `main`) and enter a version such as `1.2.0`. The workflow (`.github/workflows/release.yml`) runs the tests, then builds `CatSaver.exe` and `CatSaver-Setup.exe` with that version. It then creates the tag `v1.2.0` and a GitHub Release with both files attached, plus an automatic list of the changes since the last release.
 
 ## Code layout
 
