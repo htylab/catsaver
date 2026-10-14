@@ -15,7 +15,7 @@ A cute Windows hydration reminder. CatSaver runs quietly in the system tray. At 
   - 🙀 **戲精貓（催你喝水）**: 🙀 → 😿 → 😾 → 😹
   - 😼 **傲嬌貓**: 😼 → 🐱 → 😹
   - 🦁 **大貓**: 🦁 roaring lion → 🐅 stretching tiger
-  - 🐈 **真貓橘子（走過來陪你）**: a real-looking orange tabby (AI-generated video) walks in across the whole screen and sits down under the bubble. It looks around, then meows, waves or drinks from a bowl. Then it gets up and walks off, and comes back from the other side
+  - 🐈 **真貓橘子（走過來陪你）**: a real-looking orange tabby (AI-generated video) walks in across the whole screen and sits down under the bubble, sometimes with a big stretch first. It looks around, then meows, waves, tilts its head or drinks from a bowl. Then it gets up and walks off, and comes back from the other side
 
   A drink (🧋 bubble tea, 🍵 tea or 💧 a water drop) bobs next to the cat. The cat arrives in one of three ways: pops up, drops in with a bounce, or peeks up from below. Water drops and hearts float around it, and the speech bubble shows the message and a countdown (「還剩 15:42」). You can pick a fixed set, or the hand-drawn cat that waves and holds a glass of water, under 設定 → 貓咪樣式.
 - Dims every monitor and shows the cat on each one (configurable to the primary monitor only).

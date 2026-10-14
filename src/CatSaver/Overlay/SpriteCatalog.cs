@@ -26,8 +26,10 @@ internal sealed class SpriteCatalog
         public double Speed { get; set; }
         /// <summary>Horizontal centre of the cat's body as a fraction of the frame width (to line clips up).</summary>
         public double AnchorX { get; set; } = 0.5;
-        /// <summary>Walk-to-sit clips: the cat walks (in place) for this many frames, then sits down.</summary>
+        /// <summary>Sit-down clips: the frame where sitting starts (standing up plays from the end back to here).</summary>
         public int WalkFrames { get; set; }
+        /// <summary>Sit-down clips: true if the cat walks (in place) before sitting, so it should keep moving.</summary>
+        public bool Walks { get; set; } = true;
 
         public double Seconds => Frames * FrameMs / 1000.0;
 
