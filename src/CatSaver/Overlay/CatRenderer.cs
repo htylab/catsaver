@@ -37,6 +37,8 @@ internal sealed class CatRenderer : IDisposable
     private double? _pokeAt;
     private string? _celebrateTitle;
     private string? _celebrateSub;
+    private double _celebrateAt;
+    private const double CelebrateTextSeconds = 4.0;
 
     private const double PokeJumpSeconds = 0.55, HeartBurstSeconds = 1.3, HeartEyesSeconds = 2.0;
 
@@ -123,9 +125,10 @@ internal sealed class CatRenderer : IDisposable
         _pokeAt = t;
     }
 
-    /// <summary>Replaces the bubble text (e.g. after 「我喝了！」) and pokes the cat.</summary>
+    /// <summary>Shows other bubble text for a few seconds (e.g. after 「我喝了！」) and pokes the cat.</summary>
     public void Celebrate(double t, string title, string sub)
     {
+        _celebrateAt = t;
         _celebrateTitle = title;
         _celebrateSub = sub;
         _pokeAt = t;
@@ -573,6 +576,9 @@ internal sealed class CatRenderer : IDisposable
 
     private void DrawBubble(Graphics g, double t, TimeSpan remaining)
     {
+        if (_celebrateTitle is not null && t - _celebrateAt >= CelebrateTextSeconds)
+            _celebrateTitle = _celebrateSub = null; // back to the normal message + countdown
+
         float pulse = 1f + (float)Math.Sin(t * 3.2) * 0.025f;
         var s = g.Save();
         g.TranslateTransform(Cx, 150);

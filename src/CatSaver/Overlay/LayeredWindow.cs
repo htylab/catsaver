@@ -12,7 +12,7 @@ namespace CatSaver.Overlay;
 /// </summary>
 internal abstract class LayeredWindow : Form
 {
-    private readonly Rectangle _bounds;
+    private Rectangle _bounds;
     private readonly bool _clickThrough;
 
     private IntPtr _memDc;
@@ -37,6 +37,11 @@ internal abstract class LayeredWindow : Form
     }
 
     protected Rectangle ScreenBounds => _bounds;
+
+    /// <summary>Moves the window; takes effect with the next <see cref="RenderFrame"/>.</summary>
+    public void MoveTo(Point location) => _bounds.Location = location;
+
+    public Point ScreenLocation => _bounds.Location;
 
     protected override bool ShowWithoutActivation => true;
 

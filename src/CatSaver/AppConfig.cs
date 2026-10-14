@@ -14,7 +14,7 @@ public sealed class AppConfig
     public int IntervalMinutes { get; set; } = 60;
 
     /// <summary>How long the cat stays on screen, in minutes.</summary>
-    public int DurationMinutes { get; set; } = 16;
+    public int DurationMinutes { get; set; } = 10;
 
     /// <summary>Main text in the speech bubble.</summary>
     public string Message { get; set; } = "起來喝水了！";
@@ -27,6 +27,12 @@ public sealed class AppConfig
 
     /// <summary>Show a "我在忙，先關掉" button under the cat that dismisses this reminder.</summary>
     public bool ShowDismissButton { get; set; } = true;
+
+    /// <summary>
+    /// The dismiss button only appears this many seconds after the cat (minimum 30),
+    /// so the reminder can't be clicked away by reflex.
+    /// </summary>
+    public int DismissButtonDelaySeconds { get; set; } = 30;
 
     /// <summary>Text on the dismiss button.</summary>
     public string DismissButtonText { get; set; } = "我在忙，先關掉";
@@ -77,6 +83,12 @@ public sealed class AppConfig
     /// <summary>Font for the bubble text. Falls back automatically if not installed.</summary>
     public string FontFamily { get; set; } = "Microsoft JhengHei UI";
 
+    /// <summary>Format version of config.json, used to migrate old defaults.</summary>
+    public int ConfigVersion { get; set; } = CurrentVersion;
+
+    /// <summary>2: default duration changed from 16 to 10 minutes.</summary>
+    private const int CurrentVersion = 2;
+
     [JsonIgnore]
     public static string ConfigDirectory =>
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "CatSaver");
@@ -104,7 +116,9 @@ public sealed class AppConfig
         {
             if (File.Exists(ConfigPath))
             {
-                config = JsonSerializer.Deserialize<AppConfig>(File.ReadAllText(ConfigPath), JsonOptions) ?? new AppConfig();
+                string json = File.ReadAllText(ConfigPath);
+                config = JsonSerializer.Deserialize<AppConfig>(json, JsonOptions) ?? new AppConfig();
+                if (Migrate(config, json)) config.Save();
             }
             else
             {
@@ -122,6 +136,24 @@ public sealed class AppConfig
         return config;
     }
 
+    /// <summary>Updates settings that still hold an old default. Returns true if anything changed.</summary>
+    private static bool Migrate(AppConfig config, string json)
+    {
+        int version = 1; // files written before configVersion existed
+        using (var doc = JsonDocument.Parse(json, new JsonDocumentOptions { CommentHandling = JsonCommentHandling.Skip, AllowTrailingCommas = true }))
+        {
+            foreach (var property in doc.RootElement.EnumerateObject())
+                if (string.Equals(property.Name, "configVersion", StringComparison.OrdinalIgnoreCase) && property.Value.TryGetInt32(out int v))
+                    version = v;
+        }
+        if (version >= CurrentVersion) return false;
+
+        // 16 minutes was the old default; anything else was the user's own choice.
+        if (version < 2 && config.DurationMinutes == 16) config.DurationMinutes = 10;
+        config.ConfigVersion = CurrentVersion;
+        return true;
+    }
+
     public void Save()
     {
         Directory.CreateDirectory(ConfigDirectory);
@@ -134,6 +166,7 @@ public sealed class AppConfig
         IntervalMinutes = Math.Clamp(IntervalMinutes, 1, 24 * 60);
         DurationMinutes = Math.Clamp(DurationMinutes, 1, IntervalMinutes);
         DimOpacity = Math.Clamp(DimOpacity, 0.0, 0.9);
+        DismissButtonDelaySeconds = Math.Clamp(DismissButtonDelaySeconds, 30, 600);
         CatScale = Math.Clamp(CatScale, 0.2, 2.0);
         AnimationFps = Math.Clamp(AnimationFps, 5, 60);
         Message ??= "";
