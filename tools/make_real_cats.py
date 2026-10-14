@@ -111,7 +111,7 @@ COLUMNS = 8
 # cat is drawn ~370 px tall from ~230 px sprites: a bit soft, but keeps the app small.
 SCALE = 0.32
 AUTHOR = "htylab (AI-generated)"
-EDGE_FADE = 28         # px: soften a tail/paw that runs off the edge of the source frame
+EDGE_FADE = 56         # px: taper a tail/paw that runs off the edge of the source frame
 
 
 def api_hit(video_id):
@@ -202,18 +202,33 @@ def sitting_height(frames):
     return float(np.median([rows(f) for f in frames]))
 
 
+def cut_off(frame):
+    """True if the cat runs off the left, right or top edge of the source frame (e.g. its tail)."""
+    a = frame[..., 3] > 128
+    return a[:, :3].sum() > 5 or a[:, -3:].sum() > 5 or a[:3].sum() > 5
+
+
 def best_walk_loop(frames, min_len=8, max_len=40):
-    """Finds (start, length) whose first and last frames match best, i.e. one clean step cycle."""
+    """
+    Finds (start, length) whose first and last frames match best, i.e. one clean step
+    cycle, preferring a stretch where the whole cat (tail too) is inside the video.
+    """
     small = [np.array(Image.fromarray(f[..., 3]).resize((96, 54))).astype(np.float32) / 255 for f in frames]
-    best = None
-    for s in range(0, max(1, len(frames) - min_len)):
-        for n in range(min_len, max_len + 1):
-            if s + n >= len(frames):
-                break
-            d = np.abs(small[s] - small[s + n]).mean()
-            if best is None or d < best[0] - 1e-6:
-                best = (d, s, n)
-    return best[1], best[2], best[0]
+    cut = [cut_off(f) for f in frames]
+    for whole_cat in (True, False):
+        best = None
+        for s in range(0, max(1, len(frames) - min_len)):
+            for n in range(min_len, max_len + 1):
+                if s + n >= len(frames):
+                    break
+                if whole_cat and any(cut[s:s + n]):
+                    break
+                d = np.abs(small[s] - small[s + n]).mean()
+                if best is None or d < best[0] - 1e-6:
+                    best = (d, s, n)
+        # A whole-cat loop that doesn't really loop would stutter: a cut-off tail tip is better.
+        if best is not None and (best[0] < 0.03 or not whole_cat):
+            return best[1], best[2], best[0]
 
 
 def soften_edges(frames):
@@ -341,11 +356,26 @@ def fit_sizes(cat, clips):
 
 
 def main():
+    """python tools/make_real_cats.py [cat id ...]: rebuilds all cats, or only the given ones."""
+    only = set(sys.argv[1:])
     OUT.mkdir(parents=True, exist_ok=True)
-    for old in OUT.glob("*.png"):
-        old.unlink()
     sprites, credits, sets = [], [], []
+    if only:
+        # Keep the other cats as they are.
+        old = json.loads((OUT / "realcats.json").read_text(encoding="utf-8"))
+        rebuilt = {n for st in old["sets"] if st["id"] in only
+                   for n in st["emoji"] + st["walkers"] + st["sitDowns"] + st.get("standUps", []) + st["acts"]}
+        sprites = [x for x in old["sprites"] if x["name"] not in rebuilt]
+        credits = [x for x in old["credits"] if x["sprite"] not in rebuilt]
+        sets = [x for x in old["sets"] if x["id"] not in only]
+        for n in rebuilt:
+            (OUT / f"{n}.png").unlink(missing_ok=True)
+    else:
+        for old in OUT.glob("*.png"):
+            old.unlink()
     for cat in CATS:
+        if only and cat["id"] not in only:
+            continue
         clips = []
         for clip in cat["clips"]:
             auto = cat.get("fit") == "auto"
@@ -376,9 +406,21 @@ def main():
                 print(f"{name}: walk loop frames {s}..{s + n} (match error {err:.3f})")
             if clip["role"] == "sitdown":
                 stand = sit_start(clip, frames)
+                if clip.get("walks", True):
+                    # Walking frames with the tail outside the video are left out; the
+                    # walk clip covers that part of the approach instead.
+                    cut = [i for i in range(stand) if cut_off(frames[i])]
+                    if cut:
+                        frames, stand = frames[cut[-1] + 1:], stand - cut[-1] - 1
+                        print(f"{name}: skipped {cut[-1] + 1} walking frames with the cat cut off")
                 print(f"{name}: sits down from frame {stand} of {len(frames)}")
             if clip["role"] == "standup":
                 stand = min(len(frames) - 1, round(clip["walkStart"] * clip["fps"]))
+                # Likewise, end before the walk-off runs out of the video.
+                cut = next((i for i in range(stand + 1, len(frames)) if cut_off(frames[i])), None)
+                if cut is not None:
+                    print(f"{name}: dropped the last {len(frames) - cut} frames (cat cut off)")
+                    frames = frames[:cut]
                 print(f"{name}: walks from frame {stand} of {len(frames)}")
             soften_edges(frames)
             images = crop_and_scale(frames, clip.get("height"), scale)
@@ -410,6 +452,8 @@ def main():
         sets.append({"id": cat["id"], "name": cat["name"], "emoji": roles["sit"], "walkers": roles["walk"],
                      "sitDowns": roles["sitdown"], "standUps": roles["standup"], "acts": roles["act"]})
 
+    order = [c["id"] for c in CATS]
+    sets.sort(key=lambda st: order.index(st["id"]) if st["id"] in order else len(order))
     catalog = {"sprites": sprites, "sets": sets, "props": [], "credits": credits}
     (OUT / "realcats.json").write_text(json.dumps(catalog, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     print("total", sum(p.stat().st_size for p in OUT.glob("*.png")) // 1024, "KB")
