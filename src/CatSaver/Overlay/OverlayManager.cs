@@ -115,6 +115,14 @@ internal sealed class OverlayManager : IDisposable
             cat.Show();
             _cats.Add(cat);
 
+            // Real-cat sets: a second cat strolls along the bottom (below the buttons in z-order).
+            if (_renderer.WalkerSheet is { } walkerSheet && _renderer.Catalog is { } catalog)
+            {
+                var walker = WalkerWindow.Create(screen, catalog, walkerSheet, startPhase: 0);
+                walker.Show();
+                _extras.Add(walker);
+            }
+
             var hit = new CatHitArea(cat.CatBodyBounds);
             hit.Clicked += (_, _) => { if (AcceptsClicks) _renderer.Poke(_clock.Elapsed.TotalSeconds); };
             hit.Show();
@@ -214,6 +222,7 @@ internal sealed class OverlayManager : IDisposable
             cat.RenderFrame(frame, alpha);
         foreach (var extra in _extras)
         {
+            if (extra is WalkerWindow walker) walker.Update(t);
             if (!extra.Visible) continue; // dismiss button not shown yet
             bool dismiss = extra is PillButton { ButtonKind: PillButton.Kind.Dismiss };
             extra.RenderFrame(frame, dismiss ? alpha * dismissAlpha : alpha);

@@ -3,33 +3,82 @@ using System.Text.Json;
 namespace CatSaver.Overlay;
 
 /// <summary>
-/// The embedded Noto emoji sprite sheets (CC BY 4.0, Google) and the cat sets /
-/// drink props defined in Assets/Noto/sprites.json. Regenerate with
-/// tools/make_noto_sprites.py.
+/// The embedded sprite sheets and the cat sets / drink props built from them:
+/// <list type="bullet">
+/// <item>Assets/Noto/sprites.json: Noto animated emoji (CC BY 4.0, Google), from tools/make_noto_sprites.py</item>
+/// <item>Assets/RealCats/realcats.json: background-removed Pixabay cat videos, from tools/make_real_cats.py</item>
+/// </list>
 /// </summary>
 internal sealed class SpriteCatalog
 {
-    internal const string ResourcePrefix = "CatSaver.Noto.";
-
-    public sealed record SheetInfo(string Name, int Frames, int Columns, int Size, int FrameMs)
+    public sealed class SheetInfo
     {
-        public double LoopSeconds => Frames * FrameMs / 1000.0;
+        public string Name { get; set; } = "";
+        public int Frames { get; set; }
+        public int Columns { get; set; }
+        public int Size { get; set; }
+        public int Width { get; set; }
+        public int Height { get; set; }
+        public int FrameMs { get; set; } = 66;
+        /// <summary>Play forward then backward (for idle clips that don't loop on their own).</summary>
+        public bool PingPong { get; set; }
+        /// <summary>Walking clips: ground speed in body widths per second.</summary>
+        public double Speed { get; set; }
+
+        /// <summary>Embedded resource prefix the sheet lives under (set on load).</summary>
+        public string ResourcePrefix { get; set; } = "";
+
+        public int FrameWidth => Width > 0 ? Width : Size;
+        public int FrameHeight => Height > 0 ? Height : Size;
+        public int PlayFrames => PingPong && Frames > 2 ? Frames * 2 - 2 : Frames;
+        public double LoopSeconds => PlayFrames * FrameMs / 1000.0;
+
+        /// <summary>Sheet frame index for the n-th played frame (handles ping-pong).</summary>
+        public int FrameAt(int n)
+        {
+            n %= PlayFrames;
+            return n < Frames ? n : PlayFrames - n;
+        }
     }
 
-    public sealed record CatSet(string Id, string Name, List<string> Emoji);
+    public sealed class CatSet
+    {
+        public string Id { get; set; } = "";
+        public string Name { get; set; } = "";
+        /// <summary>Sheets for the cat in the middle. Emoji sets play them in turn; real-cat sets pick one.</summary>
+        public List<string> Emoji { get; set; } = new();
+        /// <summary>Real-cat sets: walking cats that stroll along the bottom of the screen (one is picked).</summary>
+        public List<string> Walkers { get; set; } = new();
 
-    private sealed record Catalog(List<SheetInfo> Sprites, List<CatSet> Sets, List<string> Props);
+        public bool IsReal => Walkers.Count > 0;
+    }
+
+    private sealed class Catalog
+    {
+        public List<SheetInfo> Sprites { get; set; } = new();
+        public List<CatSet> Sets { get; set; } = new();
+        public List<string> Props { get; set; } = new();
+    }
 
     public IReadOnlyDictionary<string, SheetInfo> Sheets { get; }
     public IReadOnlyList<CatSet> Sets { get; }
     public IReadOnlyList<string> Props { get; }
 
-    private SpriteCatalog(Catalog c)
+    private SpriteCatalog(List<(string Prefix, Catalog Catalog)> parts)
     {
-        Sheets = c.Sprites.ToDictionary(s => s.Name);
+        var sheets = new Dictionary<string, SheetInfo>();
+        foreach (var (prefix, c) in parts)
+            foreach (var s in c.Sprites)
+            {
+                s.ResourcePrefix = prefix;
+                sheets[s.Name] = s;
+            }
+        Sheets = sheets;
         // Drop anything that references a missing sheet.
-        Sets = c.Sets.Where(s => s.Emoji.Count > 0 && s.Emoji.All(Sheets.ContainsKey)).ToList();
-        Props = c.Props.Where(Sheets.ContainsKey).ToList();
+        Sets = parts.SelectMany(p => p.Catalog.Sets)
+            .Where(s => s.Emoji.Count > 0 && s.Emoji.All(sheets.ContainsKey) && s.Walkers.All(sheets.ContainsKey))
+            .ToList();
+        Props = parts.SelectMany(p => p.Catalog.Props).Where(sheets.ContainsKey).ToList();
     }
 
     private static readonly Lazy<SpriteCatalog?> Shared = new(Load);
@@ -39,20 +88,23 @@ internal sealed class SpriteCatalog
 
     private static SpriteCatalog? Load()
     {
-        try
+        var parts = new List<(string, Catalog)>();
+        foreach (var (prefix, file) in new[] { ("CatSaver.Noto.", "sprites.json"), ("CatSaver.RealCats.", "realcats.json") })
         {
-            using var stream = typeof(SpriteCatalog).Assembly.GetManifestResourceStream(ResourcePrefix + "sprites.json");
-            if (stream is null) return null;
-            var catalog = JsonSerializer.Deserialize<Catalog>(stream, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-            if (catalog is null) return null;
-            var result = new SpriteCatalog(catalog);
-            return result.Sets.Count > 0 ? result : null;
+            try
+            {
+                using var stream = typeof(SpriteCatalog).Assembly.GetManifestResourceStream(prefix + file);
+                if (stream is null) continue;
+                var catalog = JsonSerializer.Deserialize<Catalog>(stream, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                if (catalog is not null) parts.Add((prefix, catalog));
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"Loading {file}", ex);
+            }
         }
-        catch (Exception ex)
-        {
-            Log.Error("Loading sprites.json", ex);
-            return null;
-        }
+        var result = new SpriteCatalog(parts);
+        return result.Sets.Count > 0 ? result : null;
     }
 
     public CatSet? FindSet(string id) => Sets.FirstOrDefault(s => s.Id == id);

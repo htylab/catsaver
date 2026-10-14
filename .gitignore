@@ -3,3 +3,6 @@ obj/
 artifacts/
 *.user
 .vs/
+tools/.cache/
+tools/source/*.mp4
+tools/source/*.mov
