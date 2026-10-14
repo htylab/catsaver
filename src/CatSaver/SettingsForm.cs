@@ -24,6 +24,8 @@ internal sealed class SettingsForm : Form
     private readonly CheckBox _dismissButton = new() { Text = "「先關掉」", AutoSize = true };
     private readonly TextBox _dismissText = new() { Width = 150 };
     private readonly ComboBox _style = new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = 220 };
+    private readonly List<(string Id, string Label)> _styles = new();
+    private string SelectedStyle => _style.SelectedIndex >= 0 ? _styles[_style.SelectedIndex].Id : "random";
     private readonly ComboBox _monitors = new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = 160 };
     private readonly CheckBox _dim = new() { Text = "讓背景變暗", AutoSize = true };
     private readonly TrackBar _dimOpacity = new() { Minimum = 0, Maximum = 90, TickFrequency = 10, Width = 220, AutoSize = false, Height = 30, TickStyle = TickStyle.None };
@@ -52,9 +54,13 @@ internal sealed class SettingsForm : Form
         ShowInTaskbar = true;
 
         _monitors.Items.AddRange(new object[] { "所有螢幕", "只有主螢幕" });
-        _style.Items.AddRange(new object[] { "Noto 動態貓（會換表情）", "手繪貓（揮手拿水杯）" });
+        _styles.Add(("random", "隨機（每次換一種）"));
+        foreach (var set in Overlay.SpriteCatalog.Instance?.Sets ?? (IReadOnlyList<Overlay.SpriteCatalog.CatSet>)Array.Empty<Overlay.SpriteCatalog.CatSet>())
+            _styles.Add((set.Id, set.Name));
+        _styles.Add(("classic", "手繪貓（揮手拿水杯）"));
+        _style.Items.AddRange(_styles.Select(s => (object)s.Label).ToArray());
         // Fur colour only applies to the hand-drawn cat.
-        _style.SelectedIndexChanged += (_, _) => _catColor.Enabled = _style.SelectedIndex == 1;
+        _style.SelectedIndexChanged += (_, _) => _catColor.Enabled = SelectedStyle == "classic";
         _interval.ValueChanged += (_, _) => _duration.Maximum = _interval.Value;
         _dim.CheckedChanged += (_, _) => _dimOpacity.Enabled = _dim.Checked;
         _dismissButton.CheckedChanged += (_, _) => _dismissText.Enabled = _dismissButton.Checked;
@@ -222,8 +228,9 @@ internal sealed class SettingsForm : Form
         _drinkText.Enabled = c.ShowDrinkButton;
         _postpone.Checked = c.PostponeWhenBusy;
         _monitors.SelectedIndex = c.Monitors == "primary" ? 1 : 0;
-        _style.SelectedIndex = c.Animation == "classic" ? 1 : 0;
-        _catColor.Enabled = _style.SelectedIndex == 1;
+        int style = _styles.FindIndex(s => s.Id == c.Animation);
+        _style.SelectedIndex = style >= 0 ? style : 0;
+        _catColor.Enabled = SelectedStyle == "classic";
         _dim.Checked = c.DimScreen;
         _dimOpacity.Value = (int)Math.Round(c.DimOpacity * 100);
         _dimOpacity.Enabled = c.DimScreen;
@@ -249,7 +256,7 @@ internal sealed class SettingsForm : Form
         c.DrinkButtonText = _drinkText.Text;
         c.PostponeWhenBusy = _postpone.Checked;
         c.Monitors = _monitors.SelectedIndex == 1 ? "primary" : "all";
-        c.Animation = _style.SelectedIndex == 1 ? "classic" : "noto";
+        c.Animation = SelectedStyle;
         c.DimScreen = _dim.Checked;
         c.DimOpacity = _dimOpacity.Value / 100.0;
         c.ClickThrough = _clickThrough.Checked;

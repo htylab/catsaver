@@ -1,34 +1,168 @@
-[
-  {
-    "name": "1f63a",
-    "description": "grinning cat",
-    "frames": 30,
-    "columns": 8,
-    "size": 384,
-    "frameMs": 76
-  },
-  {
-    "name": "1f638",
-    "description": "grinning cat with smiling eyes",
-    "frames": 48,
-    "columns": 8,
-    "size": 384,
-    "frameMs": 68
-  },
-  {
-    "name": "1f63b",
-    "description": "smiling cat with heart-eyes",
-    "frames": 39,
-    "columns": 8,
-    "size": 384,
-    "frameMs": 60
-  },
-  {
-    "name": "1f63d",
-    "description": "kissing cat",
-    "frames": 31,
-    "columns": 8,
-    "size": 384,
-    "frameMs": 79
-  }
-]
+{
+  "sprites": [
+    {
+      "name": "1f63a",
+      "description": "grinning cat",
+      "frames": 30,
+      "columns": 8,
+      "size": 384,
+      "frameMs": 76
+    },
+    {
+      "name": "1f638",
+      "description": "grinning cat with smiling eyes",
+      "frames": 48,
+      "columns": 8,
+      "size": 384,
+      "frameMs": 68
+    },
+    {
+      "name": "1f63b",
+      "description": "smiling cat with heart-eyes",
+      "frames": 39,
+      "columns": 8,
+      "size": 384,
+      "frameMs": 60
+    },
+    {
+      "name": "1f63d",
+      "description": "kissing cat",
+      "frames": 31,
+      "columns": 8,
+      "size": 384,
+      "frameMs": 79
+    },
+    {
+      "name": "1f640",
+      "description": "weary cat",
+      "frames": 27,
+      "columns": 8,
+      "size": 384,
+      "frameMs": 100
+    },
+    {
+      "name": "1f63f",
+      "description": "crying cat",
+      "frames": 26,
+      "columns": 8,
+      "size": 384,
+      "frameMs": 60
+    },
+    {
+      "name": "1f63e",
+      "description": "pouting cat",
+      "frames": 28,
+      "columns": 8,
+      "size": 384,
+      "frameMs": 75
+    },
+    {
+      "name": "1f639",
+      "description": "cat with tears of joy",
+      "frames": 44,
+      "columns": 8,
+      "size": 384,
+      "frameMs": 60
+    },
+    {
+      "name": "1f63c",
+      "description": "cat with wry smile",
+      "frames": 26,
+      "columns": 8,
+      "size": 384,
+      "frameMs": 147
+    },
+    {
+      "name": "1f431",
+      "description": "cat face",
+      "frames": 37,
+      "columns": 8,
+      "size": 384,
+      "frameMs": 68
+    },
+    {
+      "name": "1f981",
+      "description": "lion",
+      "frames": 31,
+      "columns": 8,
+      "size": 384,
+      "frameMs": 60
+    },
+    {
+      "name": "1f405",
+      "description": "tiger",
+      "frames": 70,
+      "columns": 8,
+      "size": 384,
+      "frameMs": 72
+    },
+    {
+      "name": "1f9cb",
+      "description": "bubble tea",
+      "frames": 39,
+      "columns": 8,
+      "size": 256,
+      "frameMs": 90
+    },
+    {
+      "name": "1f375",
+      "description": "teacup without handle",
+      "frames": 23,
+      "columns": 8,
+      "size": 256,
+      "frameMs": 60
+    },
+    {
+      "name": "1f4a7",
+      "description": "droplet",
+      "frames": 16,
+      "columns": 8,
+      "size": 256,
+      "frameMs": 60
+    }
+  ],
+  "sets": [
+    {
+      "id": "happy",
+      "name": "開心貓",
+      "emoji": [
+        "1f63a",
+        "1f638",
+        "1f63b",
+        "1f63d"
+      ]
+    },
+    {
+      "id": "drama",
+      "name": "戲精貓（催你喝水）",
+      "emoji": [
+        "1f640",
+        "1f63f",
+        "1f63e",
+        "1f639"
+      ]
+    },
+    {
+      "id": "cool",
+      "name": "傲嬌貓",
+      "emoji": [
+        "1f63c",
+        "1f431",
+        "1f639"
+      ]
+    },
+    {
+      "id": "bigcat",
+      "name": "大貓（獅子、老虎）",
+      "emoji": [
+        "1f981",
+        "1f405"
+      ]
+    }
+  ],
+  "props": [
+    "1f9cb",
+    "1f375",
+    "1f4a7"
+  ]
+}
