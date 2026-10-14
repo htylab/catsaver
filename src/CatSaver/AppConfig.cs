@@ -49,11 +49,14 @@ public sealed class AppConfig
     /// <summary>Size multiplier for the cat (1.0 ≈ 70% of screen height).</summary>
     public double CatScale { get; set; } = 1.0;
 
-    /// <summary>Fur colour as #RRGGBB.</summary>
+    /// <summary>Fur colour as #RRGGBB (hand-drawn "classic" cat only).</summary>
     public string CatColor { get; set; } = "#F6A55A";
 
-    /// <summary>Animation style. Currently: "wave" (waves a paw and holds a glass of water).</summary>
-    public string Animation { get; set; } = "wave";
+    /// <summary>
+    /// Cat style: "noto" = Google's animated Noto cat emoji (cycles through expressions),
+    /// "classic" = hand-drawn cat that waves and holds a glass of water (uses catColor).
+    /// </summary>
+    public string Animation { get; set; } = "noto";
 
     /// <summary>Frames per second for the animation.</summary>
     public int AnimationFps { get; set; } = 30;
@@ -125,7 +128,7 @@ public sealed class AppConfig
         if (string.IsNullOrWhiteSpace(DismissButtonText)) DismissButtonText = "我在忙，先關掉";
         Monitors = string.Equals(Monitors, "primary", StringComparison.OrdinalIgnoreCase) ? "primary" : "all";
         if (string.IsNullOrWhiteSpace(FontFamily)) FontFamily = "Microsoft JhengHei UI";
-        if (string.IsNullOrWhiteSpace(Animation)) Animation = "wave";
+        Animation = string.Equals(Animation, "classic", StringComparison.OrdinalIgnoreCase) ? "classic" : "noto";
     }
 
     /// <summary>Copy (all members are values/strings), so the settings window can edit without touching the live config.</summary>

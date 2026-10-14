@@ -1,0 +1,34 @@
+[
+  {
+    "name": "1f63a",
+    "description": "grinning cat",
+    "frames": 30,
+    "columns": 8,
+    "size": 384,
+    "frameMs": 76
+  },
+  {
+    "name": "1f638",
+    "description": "grinning cat with smiling eyes",
+    "frames": 48,
+    "columns": 8,
+    "size": 384,
+    "frameMs": 68
+  },
+  {
+    "name": "1f63b",
+    "description": "smiling cat with heart-eyes",
+    "frames": 39,
+    "columns": 8,
+    "size": 384,
+    "frameMs": 60
+  },
+  {
+    "name": "1f63d",
+    "description": "kissing cat",
+    "frames": 31,
+    "columns": 8,
+    "size": 384,
+    "frameMs": 79
+  }
+]

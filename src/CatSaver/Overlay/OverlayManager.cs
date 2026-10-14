@@ -141,6 +141,7 @@ internal sealed class OverlayManager : IDisposable
         _cats.Clear();
         _dims.Clear();
         _closingStartedAt = null;
+        _renderer.ReleaseResources();
     }
 
     public void Dispose()
@@ -148,5 +149,6 @@ internal sealed class OverlayManager : IDisposable
         Microsoft.Win32.SystemEvents.DisplaySettingsChanged -= OnDisplaySettingsChanged;
         CloseWindows();
         _timer.Dispose();
+        _renderer.Dispose();
     }
 }

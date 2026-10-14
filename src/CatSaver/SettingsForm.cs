@@ -20,6 +20,7 @@ internal sealed class SettingsForm : Form
     private readonly CheckBox _countdown = new() { Text = "在對話框顯示倒數計時", AutoSize = true };
     private readonly CheckBox _dismissButton = new() { Text = "在貓咪下方顯示「先關掉」按鈕", AutoSize = true };
     private readonly TextBox _dismissText = new() { Width = 300 };
+    private readonly ComboBox _style = new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = 220 };
     private readonly ComboBox _monitors = new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = 160 };
     private readonly CheckBox _dim = new() { Text = "讓背景變暗", AutoSize = true };
     private readonly TrackBar _dimOpacity = new() { Minimum = 0, Maximum = 90, TickFrequency = 10, Width = 220 };
@@ -48,6 +49,9 @@ internal sealed class SettingsForm : Form
         ShowInTaskbar = true;
 
         _monitors.Items.AddRange(new object[] { "所有螢幕", "只有主螢幕" });
+        _style.Items.AddRange(new object[] { "Noto 動態貓（會換表情）", "手繪貓（揮手拿水杯）" });
+        // Fur colour only applies to the hand-drawn cat.
+        _style.SelectedIndexChanged += (_, _) => _catColor.Enabled = _style.SelectedIndex == 1;
         _interval.ValueChanged += (_, _) => _duration.Maximum = _interval.Value;
         _dim.CheckedChanged += (_, _) => _dimOpacity.Enabled = _dim.Checked;
         _dismissButton.CheckedChanged += (_, _) => _dismissText.Enabled = _dismissButton.Checked;
@@ -136,12 +140,13 @@ internal sealed class SettingsForm : Form
         Row("按鈕文字", _dismissText);
 
         Section("外觀");
+        Row("貓咪樣式", _style);
         Row("顯示在", _monitors);
         Row(null, _dim);
         Row("變暗程度", _dimOpacity, _dimValue);
         Row(null, _clickThrough);
         Row("貓咪大小", _catScale, _catScaleValue);
-        Row("毛色", _catColor);
+        Row("毛色", _catColor, Hint("（手繪貓）"));
 
         Section("其他");
         Row(null, _autoStart);
@@ -192,6 +197,8 @@ internal sealed class SettingsForm : Form
         _dismissText.Text = c.DismissButtonText;
         _dismissText.Enabled = c.ShowDismissButton;
         _monitors.SelectedIndex = c.Monitors == "primary" ? 1 : 0;
+        _style.SelectedIndex = c.Animation == "classic" ? 1 : 0;
+        _catColor.Enabled = _style.SelectedIndex == 1;
         _dim.Checked = c.DimScreen;
         _dimOpacity.Value = (int)Math.Round(c.DimOpacity * 100);
         _dimOpacity.Enabled = c.DimScreen;
@@ -214,6 +221,7 @@ internal sealed class SettingsForm : Form
         c.ShowDismissButton = _dismissButton.Checked;
         c.DismissButtonText = _dismissText.Text;
         c.Monitors = _monitors.SelectedIndex == 1 ? "primary" : "all";
+        c.Animation = _style.SelectedIndex == 1 ? "classic" : "noto";
         c.DimScreen = _dim.Checked;
         c.DimOpacity = _dimOpacity.Value / 100.0;
         c.ClickThrough = _clickThrough.Checked;
