@@ -28,6 +28,23 @@ public class ReminderStateTests
     }
 
     [Fact]
+    public void StartingMidReminderWaitsForTheNextSlot()
+    {
+        var s = NewState();
+        s.SkipCurrentSlot(At(10, 5));
+        Assert.Null(s.Evaluate(At(10, 5), false, false));
+        Assert.Equal(At(11, 16), s.Evaluate(At(11, 0), false, false));
+    }
+
+    [Fact]
+    public void StartingOutsideAReminderStillShowsTheNextOne()
+    {
+        var s = NewState();
+        s.SkipCurrentSlot(At(10, 30));
+        Assert.Equal(At(11, 16), s.Evaluate(At(11, 0), false, false));
+    }
+
+    [Fact]
     public void ShowNowLastsOneDuration()
     {
         var s = NewState();

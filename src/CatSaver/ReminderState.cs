@@ -53,6 +53,13 @@ public sealed class ReminderState
         _dismissedSlot = Schedule.SlotStart(now);
     }
 
+    /// <summary>
+    /// Skips the reminder that is due right now, if any, without touching anything else.
+    /// Used when the app starts, so launching it (e.g. at 10:05) doesn't pop the cat up
+    /// straight away; the next slot still fires.
+    /// </summary>
+    public void SkipCurrentSlot(DateTime now) => _dismissedSlot = Schedule.SlotStart(now);
+
     public void Pause(DateTime until)
     {
         PausedUntil = until;
