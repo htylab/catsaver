@@ -54,16 +54,28 @@ internal sealed class NotoCatAnimation : IDisposable
         }
     }
 
-    /// <summary>Draws the frame for time <paramref name="t"/> (seconds) into <paramref name="dest"/>.</summary>
-    public void Draw(Graphics g, double t, RectangleF dest)
+    /// <summary>
+    /// Draws the frame for time <paramref name="t"/> (seconds) into <paramref name="dest"/>.
+    /// <paramref name="forceSheet"/> (e.g. "1f63b") plays that expression instead of the cycle.
+    /// </summary>
+    public void Draw(Graphics g, double t, RectangleF dest, string? forceSheet = null)
     {
         // Which expression, and how far into it?
         double local = t % _cycleSeconds;
         int index = 0;
-        while (index < _sheets.Count - 1 && local >= _sheets[index].PlaySeconds)
+        int forced = forceSheet is null ? -1 : _sheets.FindIndex(s => s.Name == forceSheet);
+        if (forced >= 0)
         {
-            local -= _sheets[index].PlaySeconds;
-            index++;
+            index = forced;
+            local = t % _sheets[index].LoopSeconds;
+        }
+        else
+        {
+            while (index < _sheets.Count - 1 && local >= _sheets[index].PlaySeconds)
+            {
+                local -= _sheets[index].PlaySeconds;
+                index++;
+            }
         }
 
         var sheet = _sheets[index];

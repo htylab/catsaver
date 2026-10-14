@@ -20,6 +20,25 @@ public static class AutoStart
         }
     }
 
+    /// <summary>
+    /// If autostart is on but points at another path (the exe was moved), point it
+    /// at this exe instead.
+    /// </summary>
+    public static void RefreshPathIfEnabled()
+    {
+        try
+        {
+            using var key = Registry.CurrentUser.OpenSubKey(RunKey, writable: true);
+            if (key?.GetValue(ValueName) is string current && current.Length > 0
+                && !string.Equals(current, Command, StringComparison.OrdinalIgnoreCase))
+                key.SetValue(ValueName, Command);
+        }
+        catch (Exception ex)
+        {
+            Log.Error("Refreshing autostart path", ex);
+        }
+    }
+
     public static void Set(bool enabled)
     {
         using var key = Registry.CurrentUser.CreateSubKey(RunKey);

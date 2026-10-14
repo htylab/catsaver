@@ -11,6 +11,7 @@
   <ItemGroup>
     <!-- Link only the UI-free scheduling code from the app. -->
     <Compile Include="..\..\src\CatSaver\ReminderSchedule.cs" Link="ReminderSchedule.cs" />
+    <Compile Include="..\..\src\CatSaver\ReminderState.cs" Link="ReminderState.cs" />
   </ItemGroup>
 
   <ItemGroup>

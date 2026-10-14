@@ -31,6 +31,18 @@ public sealed class AppConfig
     /// <summary>Text on the dismiss button.</summary>
     public string DismissButtonText { get; set; } = "我在忙，先關掉";
 
+    /// <summary>Show a 「我喝了！」 button that records a cup of water and dismisses the reminder.</summary>
+    public bool ShowDrinkButton { get; set; } = true;
+
+    /// <summary>Text on the drink button.</summary>
+    public string DrinkButtonText { get; set; } = "我喝了！";
+
+    /// <summary>
+    /// While presenting or in a full-screen app (game, video), hold the reminder and
+    /// show it once you're done.
+    /// </summary>
+    public bool PostponeWhenBusy { get; set; } = true;
+
     /// <summary>"all" = cat + dimming on every monitor, "primary" = primary monitor only.</summary>
     public string Monitors { get; set; } = "all";
 
@@ -126,6 +138,7 @@ public sealed class AppConfig
         Message ??= "";
         SubMessage ??= "";
         if (string.IsNullOrWhiteSpace(DismissButtonText)) DismissButtonText = "我在忙，先關掉";
+        if (string.IsNullOrWhiteSpace(DrinkButtonText)) DrinkButtonText = "我喝了！";
         Monitors = string.Equals(Monitors, "primary", StringComparison.OrdinalIgnoreCase) ? "primary" : "all";
         if (string.IsNullOrWhiteSpace(FontFamily)) FontFamily = "Microsoft JhengHei UI";
         Animation = string.Equals(Animation, "classic", StringComparison.OrdinalIgnoreCase) ? "classic" : "noto";

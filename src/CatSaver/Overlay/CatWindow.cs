@@ -25,8 +25,20 @@ internal sealed class CatWindow : LayeredWindow
         return new CatWindow(bounds, scale, renderer);
     }
 
-    /// <summary>Where the cat window sits on screen (used to place the dismiss button).</summary>
+    /// <summary>Where the cat window sits on screen (used to place the buttons).</summary>
     public Rectangle WindowBounds => ScreenBounds;
+
+    /// <summary>Screen rectangle around the cat's body (for <see cref="CatHitArea"/>).</summary>
+    public Rectangle CatBodyBounds
+    {
+        get
+        {
+            var r = CatRenderer.CatBodyArea;
+            return Rectangle.Round(new RectangleF(
+                ScreenBounds.Left + r.X * _scale, ScreenBounds.Top + r.Y * _scale,
+                r.Width * _scale, r.Height * _scale));
+        }
+    }
 
     protected override void Draw(Graphics g, in CatFrame frame)
     {

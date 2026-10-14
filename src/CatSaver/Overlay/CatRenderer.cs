@@ -25,6 +25,13 @@ internal sealed class CatRenderer : IDisposable
     private readonly FontFamily _font;
     private readonly NotoCatAnimation? _noto;
 
+    // Interaction state (shared by the cats on every monitor).
+    private double? _pokeAt;
+    private string? _celebrateTitle;
+    private string? _celebrateSub;
+
+    private const double PokeJumpSeconds = 0.55, HeartBurstSeconds = 1.3, HeartEyesSeconds = 2.0;
+
     private readonly Color _fur;
     private readonly Color _furDark;
     private readonly Color _furLight;
@@ -54,6 +61,39 @@ internal sealed class CatRenderer : IDisposable
 
     public FontFamily Font => _font;
 
+    /// <summary>Logical-canvas area covered by the cat's body (click target).</summary>
+    public static RectangleF CatBodyArea => new(160, 320, 480, 530);
+
+    /// <summary>Clears pokes/celebrations when a new reminder starts.</summary>
+    public void ResetInteraction()
+    {
+        _pokeAt = null;
+        _celebrateTitle = _celebrateSub = null;
+    }
+
+    /// <summary>The cat was clicked at time <paramref name="t"/>: jump, heart eyes, burst of hearts.</summary>
+    public void Poke(double t)
+    {
+        // Ignore rapid repeat clicks mid-jump so the animation stays smooth.
+        if (_pokeAt is double last && t - last < PokeJumpSeconds) return;
+        _pokeAt = t;
+    }
+
+    /// <summary>Replaces the bubble text (e.g. after 「我喝了！」) and pokes the cat.</summary>
+    public void Celebrate(double t, string title, string sub)
+    {
+        _celebrateTitle = title;
+        _celebrateSub = sub;
+        _pokeAt = t;
+    }
+
+    private float PokeJump(double t)
+    {
+        if (_pokeAt is not double p) return 0;
+        double k = (t - p) / PokeJumpSeconds;
+        return k is >= 0 and < 1 ? (float)Math.Sin(Math.PI * k) * 70f : 0f;
+    }
+
     public void Draw(Graphics g, in CatFrame f)
     {
         double t = f.Time;
@@ -67,8 +107,13 @@ internal sealed class CatRenderer : IDisposable
         g.TranslateTransform(-Cx, -CanvasHeight * 0.6f);
 
         DrawDrops(g, t);
+        float jump = PokeJump(t);
+        var catState = g.Save();
+        g.TranslateTransform(0, -jump);
         if (_noto is not null) DrawNotoCat(g, t, _noto);
         else DrawCat(g, t);
+        g.Restore(catState);
+        DrawHeartBurst(g, t);
         DrawBubble(g, t, f.Remaining);
 
         g.Restore(state);
@@ -76,7 +121,7 @@ internal sealed class CatRenderer : IDisposable
 
     // ------------------------------------------------------------- noto cat
 
-    private static void DrawNotoCat(Graphics g, double t, NotoCatAnimation noto)
+    private void DrawNotoCat(Graphics g, double t, NotoCatAnimation noto)
     {
         const float size = 480, bottom = 835;
 
@@ -105,9 +150,33 @@ internal sealed class CatRenderer : IDisposable
         g.TranslateTransform(Cx, bottom - lift);
         g.RotateTransform((float)Math.Sin(t * 1.6) * 4f);
         g.ScaleTransform(sx, sy);
-        noto.Draw(g, t, new RectangleF(-size / 2, -size + 22, size, size)); // emoji has ~22px padding at the bottom
+        // Heart eyes for a moment after being clicked.
+        string? force = _pokeAt is double p0 && t - p0 < HeartEyesSeconds ? "1f63b" : null;
+        noto.Draw(g, t, new RectangleF(-size / 2, -size + 22, size, size), force); // emoji has ~22px padding at the bottom
         g.Restore(state);
     }
+
+    private void DrawHeartBurst(Graphics g, double t)
+    {
+        if (_pokeAt is not double p) return;
+        double k = (t - p) / HeartBurstSeconds;
+        if (k is < 0 or >= 1) return;
+
+        const int count = 10;
+        using var brush = new SolidBrush(Color.Transparent);
+        for (int i = 0; i < count; i++)
+        {
+            double angle = -Math.PI / 2 + (i - (count - 1) / 2.0) * 0.32; // fan out upwards
+            float dist = (float)(60 + 300 * EaseOutCubic(k));
+            float x = Cx + (float)Math.Cos(angle) * dist * 1.25f;
+            float y = 600 + (float)Math.Sin(angle) * dist * 0.85f;
+            float size = 34 + (i % 3) * 10;
+            brush.Color = Color.FromArgb((int)(230 * (1 - k)), i % 2 == 0 ? Color.FromArgb(255, 95, 140) : Color.FromArgb(255, 150, 185));
+            FillHeart(g, brush, x, y, size);
+        }
+    }
+
+    private static double EaseOutCubic(double x) => 1 - Math.Pow(1 - x, 3);
 
     // ------------------------------------------------------------------ cat
 
@@ -440,11 +509,11 @@ internal sealed class CatRenderer : IDisposable
         g.FillRectangle(fill, Cx - 34, rect.Bottom - 8, 66, 10);
 
         var textArea = RectangleF.Inflate(rect, -40, -20);
-        DrawFittedText(g, _config.Message, FontStyle.Bold, 92, Color.FromArgb(255, 235, 105, 60),
+        DrawFittedText(g, _celebrateTitle ?? _config.Message, FontStyle.Bold, 92, Color.FromArgb(255, 235, 105, 60),
             new RectangleF(textArea.X, textArea.Y + 5, textArea.Width, 125));
 
-        string sub = _config.SubMessage;
-        if (_config.ShowCountdown)
+        string sub = _celebrateSub ?? _config.SubMessage;
+        if (_config.ShowCountdown && _celebrateSub is null)
         {
             int secs = Math.Max(0, (int)Math.Ceiling(remaining.TotalSeconds));
             string countdown = $"還剩 {secs / 60:00}:{secs % 60:00}";
