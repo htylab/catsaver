@@ -1,6 +1,6 @@
 # CatSaver 🐱💧
 
-A cute Windows hydration reminder. CatSaver runs quietly in the system tray. At the top of every hour an animated cat pops up in the middle of the screen, holding a glass of water and waving, and says **「起來喝水了！」**. It stays for **16 minutes**, then fades away on its own. This repeats every hour.
+A cute Windows hydration reminder. CatSaver runs quietly in the system tray. At the top of every hour an animated cat pops up in the middle of the screen, holding a glass of water and waving, and says **「起來喝水了！」**. It stays for **10 minutes** (adjustable), then fades away on its own. This repeats every hour.
 
 ![CatSaver reminder](docs/screenshot.png)
 
@@ -9,7 +9,7 @@ A cute Windows hydration reminder. CatSaver runs quietly in the system tray. At 
 ## Features
 
 - Background tray app; launching it shows no window.
-- Reminders start at every exact hour (10:00, 11:00, ...), last 16 minutes, then hide automatically.
+- Reminders start at every exact hour (10:00, 11:00, ...), last 10 minutes, then hide automatically.
 - Animated cats from [Google's Noto animated emoji](https://googlefonts.github.io/noto-emoji-animation/). By default each reminder picks a different set:
   - 😺 **開心貓**: 😺 → 😸 → 😻 → 😽
   - 🙀 **戲精貓（催你喝水）**: 🙀 → 😿 → 😾 → 😹
@@ -18,8 +18,8 @@ A cute Windows hydration reminder. CatSaver runs quietly in the system tray. At 
 
   A drink (🧋 bubble tea, 🍵 tea or 💧 a water drop) bobs next to the cat. The cat arrives in one of three ways: pops up, drops in with a bounce, or peeks up from below. Water drops and hearts float around it, and the speech bubble shows the message and a countdown (「還剩 15:42」). You can pick a fixed set, or the hand-drawn cat that waves and holds a glass of water, under 設定 → 貓咪樣式.
 - Dims every monitor and shows the cat on each one (configurable to the primary monitor only).
-- **「我喝了！」 button** under the cat. It records a cup of water, the cat celebrates (「好棒！今天第 3 杯水」), then it leaves. Today's count is shown in the tray menu and tooltip, and is stored in `water.json`.
-- **「我在忙，先關掉」 button**: one click dismisses this reminder (the next one still comes on the hour). Neither button takes focus from the app you're typing in.
+- **「我喝了！」 button** under the cat. It records a cup of water, and the cat celebrates (「好棒！今天第 3 杯水」) but **stays** until the time is up, so you still take your break. The button then shows 「已記錄第 3 杯」, so a cup can't be counted twice. Today's count is shown in the tray menu and tooltip, and is stored in `water.json`.
+- **「我在忙，先關掉」 button**: the only way to close the cat early. It appears **30 seconds** after the cat (adjustable, minimum 30), so the reminder can't be clicked away by reflex. Neither button takes focus from the app you're typing in.
 - **Click the cat**: it jumps, gets heart eyes 😻 and bursts hearts. Only the cat itself is clickable; the rest of the overlay still lets clicks through.
 - **Postpones during presentations and full-screen apps** (PowerPoint slide show, full-screen video, games). The reminder shows once you're done, for the full duration.
 - **Settings window** (double-click the tray icon, or tray → 設定…). 儲存 applies immediately, no restart. 預覽 shows the cat with the unsaved settings.
@@ -35,7 +35,7 @@ A cute Windows hydration reminder. CatSaver runs quietly in the system tray. At 
   - 設定…: open the settings window (also: double-click the icon, or launch CatSaver.exe again)
   - 重新啟動: restart
   - 結束: quit
-- If the PC wakes up or the app starts partway through a reminder window (say 10:05), the cat shows for the rest of that window (until 10:16).
+- If the PC wakes up or the app starts partway through a reminder window (say 10:05), the cat shows for the rest of that window (until 10:10).
 
 ## Install (end users)
 
@@ -55,7 +55,7 @@ Use the settings window for normal changes. Everything is stored in `%APPDATA%\C
 ```json
 {
   "intervalMinutes": 60,          // minutes between reminders, aligned to midnight (60 = every exact hour)
-  "durationMinutes": 16,          // how long the cat stays
+  "durationMinutes": 10,          // how long the cat stays
   "message": "起來喝水了！",
   "subMessage": "離開電腦，伸展一下，喝杯水吧～",
   "showCountdown": true,
@@ -63,6 +63,7 @@ Use the settings window for normal changes. Everything is stored in `%APPDATA%\C
   "showDrinkButton": true,        // 「我喝了！」 button (counts cups)
   "drinkButtonText": "我喝了！",
   "showDismissButton": true,      // 「我在忙，先關掉」 button under the cat
+  "dismissButtonDelaySeconds": 30, // the dismiss button appears after this many seconds (min 30)
   "dismissButtonText": "我在忙，先關掉",
   "monitors": "all",              // "all" or "primary"
   "dimScreen": true,

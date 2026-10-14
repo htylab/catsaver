@@ -23,6 +23,7 @@ internal sealed class SettingsForm : Form
     private readonly CheckBox _postpone = new() { Text = "簡報、全螢幕影片或遊戲時先不跳出，結束後再提醒", AutoSize = true };
     private readonly CheckBox _dismissButton = new() { Text = "「先關掉」", AutoSize = true };
     private readonly TextBox _dismissText = new() { Width = 150 };
+    private readonly NumericUpDown _dismissDelay = new() { Minimum = 30, Maximum = 600, Width = 60 };
     private readonly ComboBox _style = new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = 220 };
     private readonly List<(string Id, string Label)> _styles = new();
     private string SelectedStyle => _style.SelectedIndex >= 0 ? _styles[_style.SelectedIndex].Id : "random";
@@ -63,7 +64,7 @@ internal sealed class SettingsForm : Form
         _style.SelectedIndexChanged += (_, _) => _catColor.Enabled = SelectedStyle == "classic";
         _interval.ValueChanged += (_, _) => _duration.Maximum = _interval.Value;
         _dim.CheckedChanged += (_, _) => _dimOpacity.Enabled = _dim.Checked;
-        _dismissButton.CheckedChanged += (_, _) => _dismissText.Enabled = _dismissButton.Checked;
+        _dismissButton.CheckedChanged += (_, _) => _dismissText.Enabled = _dismissDelay.Enabled = _dismissButton.Checked;
         _drinkButton.CheckedChanged += (_, _) => _drinkText.Enabled = _drinkButton.Checked;
         _dimOpacity.ValueChanged += (_, _) => _dimValue.Text = $"{_dimOpacity.Value}%";
         _catScale.ValueChanged += (_, _) => _catScaleValue.Text = $"{_catScale.Value}%";
@@ -148,7 +149,7 @@ internal sealed class SettingsForm : Form
 
         Section("貓咪下方的按鈕");
         Row("顯示", _drinkButton, _drinkText);
-        Row("顯示", _dismissButton, _dismissText);
+        Row("顯示", _dismissButton, _dismissText, _dismissDelay, Hint("秒後才出現"));
 
         Section("外觀");
         Row("貓咪樣式", _style);
@@ -223,6 +224,8 @@ internal sealed class SettingsForm : Form
         _dismissButton.Checked = c.ShowDismissButton;
         _dismissText.Text = c.DismissButtonText;
         _dismissText.Enabled = c.ShowDismissButton;
+        _dismissDelay.Value = c.DismissButtonDelaySeconds;
+        _dismissDelay.Enabled = c.ShowDismissButton;
         _drinkButton.Checked = c.ShowDrinkButton;
         _drinkText.Text = c.DrinkButtonText;
         _drinkText.Enabled = c.ShowDrinkButton;
@@ -252,6 +255,7 @@ internal sealed class SettingsForm : Form
         c.ShowCountdown = _countdown.Checked;
         c.ShowDismissButton = _dismissButton.Checked;
         c.DismissButtonText = _dismissText.Text;
+        c.DismissButtonDelaySeconds = (int)_dismissDelay.Value;
         c.ShowDrinkButton = _drinkButton.Checked;
         c.DrinkButtonText = _drinkText.Text;
         c.PostponeWhenBusy = _postpone.Checked;

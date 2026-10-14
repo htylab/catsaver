@@ -197,22 +197,19 @@ internal sealed class TrayApplication : ApplicationContext
         CheckSchedule();
     }
 
-    /// <summary>Records a cup of water. If the cat is up, it celebrates and leaves.</summary>
+    /// <summary>
+    /// Records a cup of water. If the cat is up it celebrates but stays until the
+    /// reminder ends (only 「我在忙，先關掉」 closes it early).
+    /// </summary>
     private void Drink()
     {
         var now = DateTime.Now;
         int cups = _water.AddCup(now);
         if (_overlay.IsShowing)
-        {
-            _overlay.Celebrate("好棒！", $"今天第 {cups} 杯水，繼續保持～");
-            _state.Dismiss(now);
-            CheckSchedule();
-        }
+            _overlay.Celebrate("好棒！", $"今天第 {cups} 杯水，再休息一下吧～", $"已記錄第 {cups} 杯");
         else
-        {
             _tray.ShowBalloonTip(3000, "CatSaver", $"記錄好了！今天第 {cups} 杯水 💧", ToolTipIcon.Info);
-            UpdateTooltip(now);
-        }
+        UpdateTooltip(now);
     }
 
     private void Pause(DateTime until)
