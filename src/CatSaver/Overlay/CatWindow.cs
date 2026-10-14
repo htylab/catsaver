@@ -5,12 +5,14 @@ internal sealed class CatWindow : LayeredWindow
 {
     private readonly CatRenderer _renderer;
     private readonly float _scale;
+    private readonly float _margin; // extra logical width on each side (wide windows)
 
-    private CatWindow(Rectangle bounds, float scale, CatRenderer renderer)
+    private CatWindow(Rectangle bounds, float scale, float margin, CatRenderer renderer)
         : base(bounds, clickThrough: true)
     {
         _renderer = renderer;
         _scale = scale;
+        _margin = margin;
     }
 
     public static CatWindow Create(Screen screen, CatRenderer renderer, double catScale)
@@ -22,10 +24,17 @@ internal sealed class CatWindow : LayeredWindow
         int w = (int)Math.Ceiling(CatRenderer.CanvasWidth * scale);
         int h = (int)Math.Ceiling(CatRenderer.CanvasHeight * scale);
         var bounds = new Rectangle(area.Left + (area.Width - w) / 2, area.Top + (area.Height - h) / 2, w, h);
-        return new CatWindow(bounds, scale, renderer);
+        float margin = 0;
+        if (renderer.WideStage)
+        {
+            // The cat walks across the whole screen: same height, full width.
+            margin = (area.Width - w) / 2f / scale;
+            bounds = new Rectangle(area.Left, bounds.Top, area.Width, h);
+        }
+        return new CatWindow(bounds, scale, margin, renderer);
     }
 
-    /// <summary>Where the cat window sits on screen (used to place the buttons).</summary>
+    /// <summary>Where the cat window sits on screen (used to place the buttons, which centre on it).</summary>
     public Rectangle WindowBounds => ScreenBounds;
 
     /// <summary>Screen rectangle around the cat's body (for <see cref="CatHitArea"/>).</summary>
@@ -35,7 +44,7 @@ internal sealed class CatWindow : LayeredWindow
         {
             var r = CatRenderer.CatBodyArea;
             return Rectangle.Round(new RectangleF(
-                ScreenBounds.Left + r.X * _scale, ScreenBounds.Top + r.Y * _scale,
+                ScreenBounds.Left + (r.X + _margin) * _scale, ScreenBounds.Top + r.Y * _scale,
                 r.Width * _scale, r.Height * _scale));
         }
     }
@@ -43,6 +52,7 @@ internal sealed class CatWindow : LayeredWindow
     protected override void Draw(Graphics g, in CatFrame frame)
     {
         g.ScaleTransform(_scale, _scale);
-        _renderer.Draw(g, frame);
+        g.TranslateTransform(_margin, 0);
+        _renderer.Draw(g, frame with { SideMargin = _margin });
     }
 }

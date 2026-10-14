@@ -3,7 +3,11 @@ using System.Drawing.Drawing2D;
 namespace CatSaver.Overlay;
 
 /// <summary>Everything that changes from frame to frame.</summary>
-internal readonly record struct CatFrame(double Time, TimeSpan Remaining);
+internal readonly record struct CatFrame(double Time, TimeSpan Remaining)
+{
+    /// <summary>Extra logical width on each side of the canvas (wide, full-screen-width windows).</summary>
+    public float SideMargin { get; init; }
+}
 
 /// <summary>
 /// Draws one frame: the cat (a Noto emoji set from <see cref="SpriteCatalog"/>, or
@@ -30,7 +34,7 @@ internal sealed class CatRenderer : IDisposable
     // Per-reminder variation.
     private SpritePlayer? _cat;   // null = hand-drawn cat
     private SpritePlayer? _prop;
-    private bool _realCat;  // _cat is a real (video) cat rather than an emoji
+    private RealCatScene? _scene; // real (video) cat walking across the screen
     private string? _lastSetId;
     private Entrance _entrance;
 
@@ -71,9 +75,9 @@ internal sealed class CatRenderer : IDisposable
     {
         _cat?.Dispose();
         _prop?.Dispose();
+        _scene?.Dispose();
         _cat = _prop = null;
-        _realCat = false;
-        WalkerSheet = null;
+        _scene = null;
         _entrance = (Entrance)Rng.Next(3);
 
         if (_catalog is null) return;
@@ -88,35 +92,34 @@ internal sealed class CatRenderer : IDisposable
         _lastSetId = set.Id;
         if (set.IsReal)
         {
-            // Real cats: one sitting cat in the middle, one walking cat along the bottom.
-            _realCat = true;
-            _cat = new SpritePlayer(_catalog, new[] { set.Emoji[Rng.Next(set.Emoji.Count)] });
-            WalkerSheet = _catalog.Sheets[set.Walkers[Rng.Next(set.Walkers.Count)]];
+            // A real cat that walks across the whole screen (no cartoon prop).
+            _scene = new RealCatScene(_catalog, set, Rng);
+            return;
         }
-        else
-        {
-            _cat = new SpritePlayer(_catalog, set.Emoji);
-        }
+        _cat = new SpritePlayer(_catalog, set.Emoji);
         if (_catalog.Props.Count > 0)
             _prop = new SpritePlayer(_catalog, new[] { _catalog.Props[Rng.Next(_catalog.Props.Count)] });
     }
 
-    /// <summary>The walking cat for this reminder (real-cat sets only), shown by <see cref="WalkerWindow"/>.</summary>
-    public SpriteCatalog.SheetInfo? WalkerSheet { get; private set; }
-
-    public SpriteCatalog? Catalog => _catalog;
+    /// <summary>
+    /// True when this reminder's cat walks across the whole screen, so the cat
+    /// window should span the full screen width.
+    /// </summary>
+    public bool WideStage => _scene is not null;
 
     /// <summary>Frees decoded animation frames while no reminder is on screen.</summary>
     public void ReleaseResources()
     {
         _cat?.Release();
         _prop?.Release();
+        _scene?.Release();
     }
 
     public void Dispose()
     {
         _cat?.Dispose();
         _prop?.Dispose();
+        _scene?.Dispose();
     }
 
     public FontFamily Font => _font;
@@ -166,12 +169,20 @@ internal sealed class CatRenderer : IDisposable
         DrawDrops(g, t);
 
         var catState = g.Save();
-        ApplyEntrance(g, t);
-        if (_prop is not null) DrawProp(g, t, _prop, _realCat ? Cx - 300 : Cx - 235);
-        g.TranslateTransform(0, -PokeJump(t));
-        if (_cat is not null && _realCat) DrawRealCat(g, t, _cat);
-        else if (_cat is not null) DrawNotoCat(g, t, _cat);
-        else DrawCat(g, t);
+        if (_scene is not null)
+        {
+            // The real cat makes its own entrance by walking in.
+            g.TranslateTransform(0, -PokeJump(t));
+            _scene.Draw(g, t, -f.SideMargin, CanvasWidth + f.SideMargin, Cx, Ground);
+        }
+        else
+        {
+            ApplyEntrance(g, t);
+            if (_prop is not null) DrawProp(g, t, _prop, Cx - 235);
+            g.TranslateTransform(0, -PokeJump(t));
+            if (_cat is not null) DrawNotoCat(g, t, _cat);
+            else DrawCat(g, t);
+        }
         g.Restore(catState);
 
         DrawHeartBurst(g, t);
@@ -231,22 +242,6 @@ internal sealed class CatRenderer : IDisposable
         g.Restore(state);
     }
 
-    // ------------------------------------------------------------- real cat
-
-    /// <summary>A background-removed video cat sitting in the middle (no cartoon squash/stretch).</summary>
-    private static void DrawRealCat(Graphics g, double t, SpritePlayer cat)
-    {
-        var sheet = cat.First;
-        if (sheet is null) return;
-        const float maxW = 470, maxH = 450;
-        float scale = Math.Min(maxW / sheet.FrameWidth, maxH / sheet.FrameHeight);
-        float w = sheet.FrameWidth * scale, h = sheet.FrameHeight * scale;
-
-        using (var shadow = new SolidBrush(Color.FromArgb(55, 0, 0, 0)))
-            g.FillEllipse(shadow, Cx - w * 0.42f, Ground - 14, w * 0.84f, 30);
-        cat.Draw(g, t, new RectangleF(Cx - w / 2, Ground - h + 6, w, h));
-    }
-
     // ------------------------------------------------------------- noto cat
 
     private void DrawNotoCat(Graphics g, double t, SpritePlayer noto)
@@ -279,7 +274,7 @@ internal sealed class CatRenderer : IDisposable
         g.RotateTransform((float)Math.Sin(t * 1.6) * 4f);
         g.ScaleTransform(sx, sy);
         // Heart eyes for a moment after being clicked.
-        string? force = !_realCat && _pokeAt is double p0 && t - p0 < HeartEyesSeconds ? "1f63b" : null;
+        string? force = _pokeAt is double p0 && t - p0 < HeartEyesSeconds ? "1f63b" : null;
         noto.Draw(g, t, new RectangleF(-size / 2, -size + 22, size, size), force); // emoji has ~22px padding at the bottom
         g.Restore(state);
     }

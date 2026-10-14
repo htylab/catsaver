@@ -40,6 +40,12 @@ Output:     MP4 (H.264, high bitrate) or ProRes / PNG sequence. 1920x1080 (minim
 - Must face **right** (the app mirrors it for walking left).
 - It must **not move across the frame**. Paws step in place, like walking on a treadmill.
 
+### 1b. Walk, then sit down
+
+> The same cat walking in place toward the right (exactly like clip 1) for about 2 seconds, then stopping and sitting down facing the camera. Flat chroma-key green screen, locked-off camera, whole cat in frame, 6 seconds.
+
+The app plays this clip when the cat arrives in the middle of the screen. It also plays the sitting-down part backwards to make the cat stand up.
+
 ### 2. Sitting idle
 
 > The same cute [orange tabby] cat sitting upright facing the camera at a slight three-quarter angle on a flat chroma-key green screen. It looks around curiously, blinks slowly, twitches an ear and swishes its tail gently, then returns to the starting pose. Locked-off camera, even lighting, whole cat in frame, 6 seconds, seamless loop.
@@ -78,9 +84,17 @@ Generate clips 1 and 2 again with different cats, replacing `[orange tabby]`:
 1. Put the videos in `tools/source/`, for example:
    - `tools/source/orange-walk.mp4`
    - `tools/source/orange-sit.mp4`
-2. Add them to `CLIPS` in `tools/make_real_cats.py`, for example:
+2. Add them to `CLIPS` in `tools/make_real_cats.py` with a role:
+   - `walk`
+   - `sitdown`
+   - `sit`
+   - `act`: meow / wave / drink / ...
+
+   For example:
    ```python
-   {"file": "tools/source/orange-walk.mp4", "role": "walk", "fps": 15, "height": 240, "speed": 0.5, "author": "me"},
-   {"file": "tools/source/orange-sit.mp4", "role": "sit", "fps": 8, "height": 320, "start": 0, "length": 5, "author": "me"},
+   {"file": "tools/source/orange-walk.mp4", "role": "walk", "fps": 24},
+   {"file": "tools/source/orange-sit.mp4", "role": "sit", "fps": 8, "start": 0, "length": 5},
    ```
-3. Run `python tools/make_real_cats.py`, then build. Tune `speed` until the paws don't slide.
+3. Run `python tools/make_real_cats.py`, then build.
+   - The walk speed is measured automatically from the planted paws, so they don't slide.
+   - All clips share one scale, so keep the camera framing the same across clips.

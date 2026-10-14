@@ -103,9 +103,9 @@ internal sealed class TrayApplication : ApplicationContext
         CheckSchedule();
     }
 
-    private OverlayManager CreateOverlay(AppConfig config)
+    private OverlayManager CreateOverlay(AppConfig config, bool preview = false)
     {
-        var overlay = new OverlayManager(config);
+        var overlay = new OverlayManager(config, preview);
         overlay.DismissRequested += (_, _) => DismissCurrent();
         overlay.DrinkRequested += (_, _) => Drink();
         return overlay;
@@ -183,11 +183,27 @@ internal sealed class TrayApplication : ApplicationContext
         CheckSchedule();
     }
 
-    /// <summary>Ends a "show now" preview (scheduled reminders are unaffected).</summary>
-    public void StopPreview()
+    /// <summary>
+    /// Settings preview: shows the cat with <paramref name="config"/> (not saved) in a
+    /// non-blocking way (no dimming or buttons, click-through) until <see cref="EndPreview"/>.
+    /// </summary>
+    public void StartPreview(AppConfig config)
+    {
+        config.Normalize();
+        _config = config;
+        _state.Schedule = config.CreateSchedule();
+        _state.PostponeWhenBusy = config.PostponeWhenBusy;
+        _overlay.Dispose();
+        _overlay = CreateOverlay(config, preview: true);
+        _state.ShowUntil(DateTime.Now.AddHours(1));
+        CheckSchedule();
+    }
+
+    /// <summary>Closes the settings preview and switches to <paramref name="config"/> (saved or original).</summary>
+    public void EndPreview(AppConfig config)
     {
         _state.StopManual();
-        CheckSchedule();
+        ApplyConfig(config); // rebuilds a normal overlay; a scheduled reminder shows again if due
     }
 
     /// <summary>Hides the current reminder; the next one comes at the next slot as usual.</summary>

@@ -36,6 +36,9 @@ public sealed class ReminderState
 
     public void ShowNow(DateTime now) => _manualUntil = now + Schedule.Duration;
 
+    /// <summary>Shows the reminder until <paramref name="until"/> (e.g. a settings preview).</summary>
+    public void ShowUntil(DateTime until) => _manualUntil = until;
+
     public void StopManual() => _manualUntil = null;
 
     /// <summary>True while a "show now" / preview is active.</summary>

@@ -1,107 +1,133 @@
 {
   "sprites": [
     {
-      "name": "real318833",
-      "frames": 27,
+      "name": "real_orange_walk",
+      "frames": 20,
       "columns": 8,
-      "size": 240,
-      "width": 412,
-      "height": 240,
-      "frameMs": 67,
+      "size": 222,
+      "width": 418,
+      "height": 222,
+      "frameMs": 42,
       "pingPong": false,
-      "speed": 0.55
+      "anchorX": 0.552,
+      "speed": 0.643
     },
     {
-      "name": "real359118",
-      "frames": 13,
+      "name": "real_orange_walk_to_sit",
+      "frames": 79,
       "columns": 8,
-      "size": 240,
-      "width": 395,
-      "height": 240,
-      "frameMs": 67,
+      "size": 287,
+      "width": 505,
+      "height": 287,
+      "frameMs": 83,
       "pingPong": false,
-      "speed": 0.45
+      "anchorX": 0.536,
+      "startAnchorX": 0.495,
+      "endAnchorX": 0.571,
+      "walkFrames": 25
     },
     {
-      "name": "real116648",
-      "frames": 32,
+      "name": "real_orange_sit",
+      "frames": 40,
       "columns": 8,
-      "size": 320,
-      "width": 248,
-      "height": 320,
+      "size": 286,
+      "width": 226,
+      "height": 286,
       "frameMs": 125,
       "pingPong": true,
-      "speed": 0
+      "anchorX": 0.565
     },
     {
-      "name": "real116190",
-      "frames": 32,
+      "name": "real_orange_meow",
+      "frames": 65,
       "columns": 8,
-      "size": 320,
-      "width": 472,
-      "height": 320,
-      "frameMs": 125,
-      "pingPong": true,
-      "speed": 0
+      "size": 278,
+      "width": 168,
+      "height": 278,
+      "frameMs": 100,
+      "pingPong": false,
+      "anchorX": 0.607
     },
     {
-      "name": "real302856",
-      "frames": 32,
+      "name": "real_orange_wave",
+      "frames": 65,
       "columns": 8,
-      "size": 320,
-      "width": 256,
-      "height": 320,
-      "frameMs": 125,
-      "pingPong": true,
-      "speed": 0
+      "size": 299,
+      "width": 536,
+      "height": 299,
+      "frameMs": 100,
+      "pingPong": false,
+      "anchorX": 0.521
+    },
+    {
+      "name": "real_orange_drink",
+      "frames": 70,
+      "columns": 8,
+      "size": 273,
+      "width": 478,
+      "height": 273,
+      "frameMs": 100,
+      "pingPong": false,
+      "anchorX": 0.508
     }
   ],
   "sets": [
     {
       "id": "realcat",
-      "name": "真貓散步（真實的貓）",
+      "name": "真貓橘子（走過來陪你）",
       "emoji": [
-        "real116648",
-        "real116190",
-        "real302856"
+        "real_orange_sit"
       ],
       "walkers": [
-        "real318833",
-        "real359118"
+        "real_orange_walk"
+      ],
+      "sitDowns": [
+        "real_orange_walk_to_sit"
+      ],
+      "acts": [
+        "real_orange_meow",
+        "real_orange_wave",
+        "real_orange_drink"
       ]
     }
   ],
   "props": [],
   "credits": [
     {
-      "sprite": "real318833",
-      "pixabayId": 318833,
-      "author": "greenscreenfxs",
-      "url": "https://pixabay.com/videos/id-318833/"
+      "sprite": "real_orange_walk",
+      "pixabayId": null,
+      "author": "htylab (AI-generated)",
+      "url": ""
     },
     {
-      "sprite": "real359118",
-      "pixabayId": 359118,
-      "author": "suniilsk",
-      "url": "https://pixabay.com/videos/id-359118/"
+      "sprite": "real_orange_walk_to_sit",
+      "pixabayId": null,
+      "author": "htylab (AI-generated)",
+      "url": ""
     },
     {
-      "sprite": "real116648",
-      "pixabayId": 116648,
-      "author": "BoVibol",
-      "url": "https://pixabay.com/videos/id-116648/"
+      "sprite": "real_orange_sit",
+      "pixabayId": null,
+      "author": "htylab (AI-generated)",
+      "url": ""
     },
     {
-      "sprite": "real116190",
-      "pixabayId": 116190,
-      "author": "BoVibol",
-      "url": "https://pixabay.com/videos/id-116190/"
+      "sprite": "real_orange_meow",
+      "pixabayId": null,
+      "author": "htylab (AI-generated)",
+      "url": ""
     },
     {
-      "sprite": "real302856",
-      "pixabayId": 302856,
-      "author": "Pixvault",
-      "url": "https://pixabay.com/videos/id-302856/"
+      "sprite": "real_orange_wave",
+      "pixabayId": null,
+      "author": "htylab (AI-generated)",
+      "url": ""
+    },
+    {
+      "sprite": "real_orange_drink",
+      "pixabayId": null,
+      "author": "htylab (AI-generated)",
+      "url": ""
     }
   ]
 }

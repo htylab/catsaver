@@ -42,9 +42,16 @@ internal sealed class OverlayManager : IDisposable
     private DateTime? _failedEndsAt;
     private int _ticks;
 
-    public OverlayManager(AppConfig config)
+    private readonly bool _preview;
+
+    /// <param name="preview">
+    /// Settings preview: just the cat and bubble. No dimming, buttons or click target,
+    /// so nothing blocks the screen, and the settings window may stay on top.
+    /// </param>
+    public OverlayManager(AppConfig config, bool preview = false)
     {
         _config = config;
+        _preview = preview;
         _renderer = new CatRenderer(config);
         _timer = new System.Windows.Forms.Timer { Interval = 1000 / config.AnimationFps };
         _timer.Tick += (_, _) => Tick();
@@ -104,7 +111,7 @@ internal sealed class OverlayManager : IDisposable
 
         foreach (var screen in screens)
         {
-            if (_config.DimScreen && _config.DimOpacity > 0)
+            if (_config.DimScreen && _config.DimOpacity > 0 && !_preview)
             {
                 var dim = new DimForm(screen, _config.ClickThrough);
                 dim.Show();
@@ -114,14 +121,7 @@ internal sealed class OverlayManager : IDisposable
             var cat = CatWindow.Create(screen, _renderer, _config.CatScale);
             cat.Show();
             _cats.Add(cat);
-
-            // Real-cat sets: a second cat strolls along the bottom (below the buttons in z-order).
-            if (_renderer.WalkerSheet is { } walkerSheet && _renderer.Catalog is { } catalog)
-            {
-                var walker = WalkerWindow.Create(screen, catalog, walkerSheet, startPhase: 0);
-                walker.Show();
-                _extras.Add(walker);
-            }
+            if (_preview) continue;
 
             var hit = new CatHitArea(cat.CatBodyBounds);
             hit.Clicked += (_, _) => { if (AcceptsClicks) _renderer.Poke(_clock.Elapsed.TotalSeconds); };
@@ -212,7 +212,8 @@ internal sealed class OverlayManager : IDisposable
 
         float dismissAlpha = UpdateButtons(t);
 
-        var remaining = _endsAt - DateTime.Now;
+        // A settings preview shows the configured duration instead of a real countdown.
+        var remaining = _preview ? TimeSpan.FromMinutes(_config.DurationMinutes) : _endsAt - DateTime.Now;
         if (remaining < TimeSpan.Zero) remaining = TimeSpan.Zero;
         var frame = new CatFrame(t, remaining);
 
@@ -222,14 +223,13 @@ internal sealed class OverlayManager : IDisposable
             cat.RenderFrame(frame, alpha);
         foreach (var extra in _extras)
         {
-            if (extra is WalkerWindow walker) walker.Update(t);
             if (!extra.Visible) continue; // dismiss button not shown yet
             bool dismiss = extra is PillButton { ButtonKind: PillButton.Kind.Dismiss };
             extra.RenderFrame(frame, dismiss ? alpha * dismissAlpha : alpha);
         }
 
         // Every ~2 seconds make sure nothing has been raised above us.
-        if (++_ticks % (_config.AnimationFps * 2) == 0)
+        if (++_ticks % (_config.AnimationFps * 2) == 0 && !_preview)
         {
             foreach (var dim in _dims) dim.BringToTop();
             foreach (var cat in _cats) cat.BringToTop();

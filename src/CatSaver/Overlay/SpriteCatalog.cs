@@ -6,7 +6,7 @@ namespace CatSaver.Overlay;
 /// The embedded sprite sheets and the cat sets / drink props built from them:
 /// <list type="bullet">
 /// <item>Assets/Noto/sprites.json: Noto animated emoji (CC BY 4.0, Google), from tools/make_noto_sprites.py</item>
-/// <item>Assets/RealCats/realcats.json: background-removed Pixabay cat videos, from tools/make_real_cats.py</item>
+/// <item>Assets/RealCats/realcats.json: background-removed green-screen cat videos, from tools/make_real_cats.py</item>
 /// </list>
 /// </summary>
 internal sealed class SpriteCatalog
@@ -24,6 +24,12 @@ internal sealed class SpriteCatalog
         public bool PingPong { get; set; }
         /// <summary>Walking clips: ground speed in body widths per second.</summary>
         public double Speed { get; set; }
+        /// <summary>Horizontal centre of the cat's body as a fraction of the frame width (to line clips up).</summary>
+        public double AnchorX { get; set; } = 0.5;
+        /// <summary>Walk-to-sit clips: the cat walks (in place) for this many frames, then sits down.</summary>
+        public int WalkFrames { get; set; }
+
+        public double Seconds => Frames * FrameMs / 1000.0;
 
         /// <summary>Embedded resource prefix the sheet lives under (set on load).</summary>
         public string ResourcePrefix { get; set; } = "";
@@ -47,8 +53,12 @@ internal sealed class SpriteCatalog
         public string Name { get; set; } = "";
         /// <summary>Sheets for the cat in the middle. Emoji sets play them in turn; real-cat sets pick one.</summary>
         public List<string> Emoji { get; set; } = new();
-        /// <summary>Real-cat sets: walking cats that stroll along the bottom of the screen (one is picked).</summary>
+        /// <summary>Real-cat sets: the cat walking in place (it is moved across the screen).</summary>
         public List<string> Walkers { get; set; } = new();
+        /// <summary>Real-cat sets: things the sitting cat does now and then (meow, wave, drink...).</summary>
+        public List<string> Acts { get; set; } = new();
+        /// <summary>Real-cat sets: the cat walking in and sitting down (also played backwards to stand up).</summary>
+        public List<string> SitDowns { get; set; } = new();
 
         public bool IsReal => Walkers.Count > 0;
     }
@@ -76,7 +86,8 @@ internal sealed class SpriteCatalog
         Sheets = sheets;
         // Drop anything that references a missing sheet.
         Sets = parts.SelectMany(p => p.Catalog.Sets)
-            .Where(s => s.Emoji.Count > 0 && s.Emoji.All(sheets.ContainsKey) && s.Walkers.All(sheets.ContainsKey))
+            .Where(s => s.Emoji.Count > 0 && s.Emoji.All(sheets.ContainsKey) && s.Walkers.All(sheets.ContainsKey)
+                        && s.Acts.All(sheets.ContainsKey) && s.SitDowns.All(sheets.ContainsKey))
             .ToList();
         Props = parts.SelectMany(p => p.Catalog.Props).Where(sheets.ContainsKey).ToList();
     }

@@ -3,15 +3,16 @@ using System.Diagnostics;
 namespace CatSaver;
 
 /// <summary>
-/// Settings window. "儲存" writes config.json and applies it immediately;
-/// "預覽" shows the cat with the unsaved settings; "取消" reverts a preview.
+/// Settings window. While it is open the cat is previewed live (without blocking
+/// the screen) and follows every change; closing the window ends the preview.
+/// "儲存" writes config.json and applies it immediately; "取消" keeps the old settings.
 /// </summary>
 internal sealed class SettingsForm : Form
 {
     private readonly TrayApplication _app;
     private readonly AppConfig _original;
-    private bool _previewing;
-    private bool _saved;
+    private AppConfig? _saved;
+    private readonly System.Windows.Forms.Timer _previewDebounce = new() { Interval = 400 };
 
     private readonly NumericUpDown _interval = new() { Minimum = 1, Maximum = 24 * 60, Width = 80 };
     private readonly NumericUpDown _duration = new() { Minimum = 1, Maximum = 60, Width = 80 };
@@ -49,7 +50,9 @@ internal sealed class SettingsForm : Form
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;
         MinimizeBox = true;
-        StartPosition = FormStartPosition.CenterScreen;
+        // Left side of the screen, above the previewed cat.
+        StartPosition = FormStartPosition.Manual;
+        TopMost = true;
         AutoSize = true;
         AutoSizeMode = AutoSizeMode.GrowAndShrink;
         ShowInTaskbar = true;
@@ -73,6 +76,18 @@ internal sealed class SettingsForm : Form
         BuildLayout();
         LoadFrom(_original);
         _autoStart.Checked = TrayApplication.SafeIsAutoStartEnabled();
+
+        // Live preview: refresh shortly after anything that changes the look.
+        _previewDebounce.Tick += (_, _) => { _previewDebounce.Stop(); Preview(); };
+        void Changed(object? _, EventArgs __) { _previewDebounce.Stop(); _previewDebounce.Start(); }
+        foreach (var c in new Control[] { _message, _subMessage, _drinkText, _dismissText })
+            c.TextChanged += Changed;
+        foreach (var c in new[] { _countdown, _drinkButton, _dismissButton })
+            c.CheckedChanged += Changed;
+        _style.SelectedIndexChanged += Changed;
+        _monitors.SelectedIndexChanged += Changed;
+        _catScale.ValueChanged += Changed;
+        _catColor.BackColorChanged += Changed;
     }
 
     // ------------------------------------------------------------------ layout
@@ -165,7 +180,7 @@ internal sealed class SettingsForm : Form
         Row(null, _autoStart, openFolder);
 
         // Buttons
-        var preview = new Button { Text = "預覽", AutoSize = true };
+        var preview = new Button { Text = "換一隻貓", AutoSize = true };
         var defaults = new Button { Text = "還原預設值", AutoSize = true };
         var save = new Button { Text = "儲存", AutoSize = true, DialogResult = DialogResult.None };
         var cancel = new Button { Text = "取消", AutoSize = true };
@@ -200,15 +215,15 @@ internal sealed class SettingsForm : Form
     {
         base.OnLoad(e);
         // On small screens, cap the height and let the contents scroll.
-        var work = Screen.FromControl(this).WorkingArea;
+        var work = (Screen.PrimaryScreen ?? Screen.FromControl(this)).WorkingArea;
         if (Height > work.Height && _grid is not null)
         {
             AutoSize = false;
             _grid.Dock = DockStyle.Top;
             AutoScroll = true;
             Size = new Size(Width + SystemInformation.VerticalScrollBarWidth, work.Height - 20);
-            Location = new Point(Location.X, work.Top + 10);
         }
+        Location = new Point(work.Left + 24, work.Top + Math.Max(10, (work.Height - Height) / 2));
     }
 
     // ------------------------------------------------------------- data flow
@@ -279,9 +294,9 @@ internal sealed class SettingsForm : Form
 
     private void Preview()
     {
-        _app.ApplyConfig(ReadForm());
-        _app.ShowNow();
-        _previewing = true;
+        _app.StartPreview(ReadForm());
+        // The new overlay windows are topmost too; stay above them.
+        BringToFront();
     }
 
     private void Save()
@@ -307,9 +322,7 @@ internal sealed class SettingsForm : Form
             MessageBox.Show(this, $"無法變更開機自動啟動設定：\n{ex.Message}", "CatSaver", MessageBoxButtons.OK, MessageBoxIcon.Warning);
         }
 
-        _app.ApplyConfig(config);
-        if (_previewing) _app.StopPreview();
-        _saved = true;
+        _saved = config;
         Close();
     }
 
@@ -326,14 +339,17 @@ internal sealed class SettingsForm : Form
         }
     }
 
+    protected override void OnShown(EventArgs e)
+    {
+        base.OnShown(e);
+        Preview(); // show the cat as soon as the settings open
+    }
+
     protected override void OnFormClosed(FormClosedEventArgs e)
     {
-        if (_previewing && !_saved)
-        {
-            // Cancelled after previewing: go back to the saved settings.
-            _app.ApplyConfig(_original);
-            _app.StopPreview();
-        }
+        _previewDebounce.Dispose();
+        // Close the preview and use the saved settings (or the original ones on 取消).
+        _app.EndPreview(_saved ?? _original);
         base.OnFormClosed(e);
     }
 }
