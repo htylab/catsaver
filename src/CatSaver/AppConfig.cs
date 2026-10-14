@@ -65,10 +65,11 @@ public sealed class AppConfig
     public string CatColor { get; set; } = "#F6A55A";
 
     /// <summary>
-    /// Cat style: "noto" = Google's animated Noto cat emoji (cycles through expressions),
-    /// "classic" = hand-drawn cat that waves and holds a glass of water (uses catColor).
+    /// Cat style: "random" (a different Noto cat set each reminder), a set id from
+    /// Assets/Noto/sprites.json ("happy", "drama", "cool", "bigcat"), or "classic"
+    /// (hand-drawn cat that waves and holds a glass of water; uses catColor).
     /// </summary>
-    public string Animation { get; set; } = "noto";
+    public string Animation { get; set; } = "random";
 
     /// <summary>Frames per second for the animation.</summary>
     public int AnimationFps { get; set; } = 30;
@@ -141,7 +142,9 @@ public sealed class AppConfig
         if (string.IsNullOrWhiteSpace(DrinkButtonText)) DrinkButtonText = "我喝了！";
         Monitors = string.Equals(Monitors, "primary", StringComparison.OrdinalIgnoreCase) ? "primary" : "all";
         if (string.IsNullOrWhiteSpace(FontFamily)) FontFamily = "Microsoft JhengHei UI";
-        Animation = string.Equals(Animation, "classic", StringComparison.OrdinalIgnoreCase) ? "classic" : "noto";
+        Animation = Animation?.Trim().ToLowerInvariant() ?? "";
+        // "noto"/"wave" were earlier names; unknown ids fall back to random in the renderer too.
+        if (Animation is "" or "noto" or "wave") Animation = "random";
     }
 
     /// <summary>Copy (all members are values/strings), so the settings window can edit without touching the live config.</summary>

@@ -6,13 +6,11 @@ namespace CatSaver.Overlay;
 internal readonly record struct CatFrame(double Time, TimeSpan Remaining);
 
 /// <summary>
-/// Draws the cat, a glass of water, floating drops and the speech bubble using
-/// plain GDI+ shapes – no image assets needed. Everything is drawn in a fixed
-/// logical canvas (<see cref="CanvasWidth"/> × <see cref="CanvasHeight"/>) and
-/// scaled by the window.
-///
-/// To change the look, edit this class (or add another renderer and pick it via
-/// the "animation" config value).
+/// Draws one frame: the cat (a Noto emoji set from <see cref="SpriteCatalog"/>, or
+/// the hand-drawn "classic" cat), a drink prop, floating drops/hearts and the speech
+/// bubble. Everything is drawn in a fixed logical canvas
+/// (<see cref="CanvasWidth"/> × <see cref="CanvasHeight"/>) and scaled by the window.
+/// Each reminder picks a cat set (when "random"), a drink prop and an entrance.
 /// </summary>
 internal sealed class CatRenderer : IDisposable
 {
@@ -23,7 +21,17 @@ internal sealed class CatRenderer : IDisposable
 
     private readonly AppConfig _config;
     private readonly FontFamily _font;
-    private readonly NotoCatAnimation? _noto;
+    private readonly SpriteCatalog? _catalog;
+    private static readonly Random Rng = new();
+
+    /// <summary>How the cat arrives on screen; picked at random per reminder.</summary>
+    private enum Entrance { Pop, Drop, Rise }
+
+    // Per-reminder variation.
+    private SpritePlayer? _cat;   // null = hand-drawn cat
+    private SpritePlayer? _prop;
+    private string? _lastSetId;
+    private Entrance _entrance;
 
     // Interaction state (shared by the cats on every monitor).
     private double? _pokeAt;
@@ -50,25 +58,61 @@ internal sealed class CatRenderer : IDisposable
         _furDark = Shade(_fur, 0.72f);
         _furLight = Mix(_fur, Color.White, 0.65f);
         _outline = Shade(_fur, 0.45f);
-        if (config.Animation == "noto")
-            _noto = NotoCatAnimation.TryLoad(); // falls back to the hand-drawn cat if missing
+        if (config.Animation != "classic")
+            _catalog = SpriteCatalog.Instance; // null → falls back to the hand-drawn cat
+        PickVariation();
+    }
+
+    /// <summary>Chooses the cat set, drink prop and entrance for the next reminder.</summary>
+    private void PickVariation()
+    {
+        _cat?.Dispose();
+        _prop?.Dispose();
+        _cat = _prop = null;
+        _entrance = (Entrance)Rng.Next(3);
+
+        if (_catalog is null) return;
+        var set = _config.Animation == "random" ? null : _catalog.FindSet(_config.Animation);
+        if (set is null)
+        {
+            // Random, but not the same set twice in a row.
+            var pool = _catalog.Sets.Where(s => s.Id != _lastSetId).ToList();
+            if (pool.Count == 0) pool = _catalog.Sets.ToList();
+            set = pool[Rng.Next(pool.Count)];
+        }
+        _lastSetId = set.Id;
+        _cat = new SpritePlayer(_catalog, set.Emoji);
+        if (_catalog.Props.Count > 0)
+            _prop = new SpritePlayer(_catalog, new[] { _catalog.Props[Rng.Next(_catalog.Props.Count)] });
     }
 
     /// <summary>Frees decoded animation frames while no reminder is on screen.</summary>
-    public void ReleaseResources() => _noto?.Release();
+    public void ReleaseResources()
+    {
+        _cat?.Release();
+        _prop?.Release();
+    }
 
-    public void Dispose() => _noto?.Dispose();
+    public void Dispose()
+    {
+        _cat?.Dispose();
+        _prop?.Dispose();
+    }
 
     public FontFamily Font => _font;
 
     /// <summary>Logical-canvas area covered by the cat's body (click target).</summary>
     public static RectangleF CatBodyArea => new(160, 320, 480, 530);
 
-    /// <summary>Clears pokes/celebrations when a new reminder starts.</summary>
+    /// <summary>
+    /// Called when a new reminder starts: clears pokes/celebrations and picks a
+    /// (possibly different) cat, prop and entrance.
+    /// </summary>
     public void ResetInteraction()
     {
         _pokeAt = null;
         _celebrateTitle = _celebrateSub = null;
+        PickVariation();
     }
 
     /// <summary>The cat was clicked at time <paramref name="t"/>: jump, heart eyes, burst of hearts.</summary>
@@ -98,32 +142,78 @@ internal sealed class CatRenderer : IDisposable
     {
         double t = f.Time;
 
-        // Pop-in: scale up with a little overshoot during the first ~0.7s.
-        float intro = (float)Math.Clamp(t / 0.7, 0, 1);
-        float pop = EaseOutBack(intro);
-        var state = g.Save();
-        g.TranslateTransform(Cx, CanvasHeight * 0.6f);
-        g.ScaleTransform(0.3f + 0.7f * pop, 0.3f + 0.7f * pop);
-        g.TranslateTransform(-Cx, -CanvasHeight * 0.6f);
-
         DrawDrops(g, t);
-        float jump = PokeJump(t);
+
         var catState = g.Save();
-        g.TranslateTransform(0, -jump);
-        if (_noto is not null) DrawNotoCat(g, t, _noto);
+        ApplyEntrance(g, t);
+        if (_prop is not null) DrawProp(g, t, _prop);
+        g.TranslateTransform(0, -PokeJump(t));
+        if (_cat is not null) DrawNotoCat(g, t, _cat);
         else DrawCat(g, t);
         g.Restore(catState);
-        DrawHeartBurst(g, t);
-        DrawBubble(g, t, f.Remaining);
 
+        DrawHeartBurst(g, t);
+
+        // The bubble pops in (scale with a little overshoot), slightly after the cat.
+        float pop = EaseOutBack((float)Math.Clamp((t - 0.15) / 0.6, 0, 1));
+        var bubbleState = g.Save();
+        g.TranslateTransform(Cx, 260);
+        g.ScaleTransform(0.2f + 0.8f * pop, 0.2f + 0.8f * pop);
+        g.TranslateTransform(-Cx, -260);
+        if (pop > 0) DrawBubble(g, t, f.Remaining);
+        g.Restore(bubbleState);
+    }
+
+    private const float Ground = 835;
+
+    private void ApplyEntrance(Graphics g, double t)
+    {
+        switch (_entrance)
+        {
+            case Entrance.Pop:
+            {
+                // Grows from the ground with an overshoot.
+                float k = EaseOutBack((float)Math.Clamp(t / 0.7, 0, 1));
+                float s = 0.3f + 0.7f * k;
+                g.TranslateTransform(Cx, Ground);
+                g.ScaleTransform(s, s);
+                g.TranslateTransform(-Cx, -Ground);
+                break;
+            }
+            case Entrance.Drop:
+            {
+                // Falls from above and bounces.
+                float k = EaseOutBounce((float)Math.Clamp(t / 1.1, 0, 1));
+                g.TranslateTransform(0, -(1 - k) * 700);
+                break;
+            }
+            case Entrance.Rise:
+            {
+                // Peeks up from below the window edge.
+                float k = EaseOutBack((float)Math.Clamp(t / 0.9, 0, 1));
+                g.TranslateTransform(0, (1 - k) * 560);
+                break;
+            }
+        }
+    }
+
+    /// <summary>The drink (bubble tea / tea / water drop) bobbing next to the cat.</summary>
+    private static void DrawProp(Graphics g, double t, SpritePlayer prop)
+    {
+        const float size = 175;
+        float bob = (float)Math.Sin(t * 2.8) * 8f;
+        var state = g.Save();
+        g.TranslateTransform(Cx - 235, Ground - size / 2 + 8 + bob);
+        g.RotateTransform((float)Math.Sin(t * 1.9) * 6f);
+        prop.Draw(g, t, new RectangleF(-size / 2, -size / 2, size, size));
         g.Restore(state);
     }
 
     // ------------------------------------------------------------- noto cat
 
-    private void DrawNotoCat(Graphics g, double t, NotoCatAnimation noto)
+    private void DrawNotoCat(Graphics g, double t, SpritePlayer noto)
     {
-        const float size = 480, bottom = 835;
+        const float size = 480, bottom = Ground;
 
         // Every few seconds: a little hop, then a squash on landing.
         const double hopEvery = 3.2, hopTime = 0.45, squashTime = 0.18;
@@ -528,6 +618,16 @@ internal sealed class CatRenderer : IDisposable
 
     private void DrawFittedText(Graphics g, string text, FontStyle style, float emSize, Color color, RectangleF box) =>
         Drawing.DrawFittedText(g, _font, text, style, emSize, color, box);
+
+    private static float EaseOutBounce(float x)
+    {
+        const float n1 = 7.5625f, d1 = 2.75f;
+        if (x < 1 / d1) return n1 * x * x;
+        if (x < 2 / d1) { x -= 1.5f / d1; return n1 * x * x + 0.75f; }
+        if (x < 2.5f / d1) { x -= 2.25f / d1; return n1 * x * x + 0.9375f; }
+        x -= 2.625f / d1;
+        return n1 * x * x + 0.984375f;
+    }
 
     private static float EaseOutBack(float x)
     {
