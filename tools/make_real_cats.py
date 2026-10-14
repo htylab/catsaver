@@ -9,8 +9,9 @@ Clips can also be local green-screen videos (e.g. ones you generated yourself):
 use {"file": "tools/source/my-cat.mp4", "author": "...", ...} instead of "id".
 See docs/cat-video-brief.md for what such videos should look like.
 
-The source videos are downloaded to tools/.cache/ (git-ignored) and are NOT
-committed: only the processed, background-removed sprite sheets go into
+Local clips (the project owner's AI-generated orange tabby) live in
+tools/source/. Pixabay downloads go to tools/.cache/ (git-ignored) and are not
+committed. Only the processed, background-removed sprite sheets go into
 src/CatSaver/Assets/RealCats/. Videos are under the Pixabay Content License
 (https://pixabay.com/service/license-summary/); credits are in realcats.json.
 """
