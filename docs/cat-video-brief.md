@@ -44,7 +44,11 @@ Output:     MP4 (H.264, high bitrate) or ProRes / PNG sequence. 1920x1080 (minim
 
 > The same cat walking in place toward the right (exactly like clip 1) for about 2 seconds, then stopping and sitting down facing the camera. Flat chroma-key green screen, locked-off camera, whole cat in frame, 6 seconds.
 
-The app plays this clip when the cat arrives in the middle of the screen. It also plays the sitting-down part backwards to make the cat stand up.
+The app plays this clip when the cat arrives in the middle of the screen. It also plays the sitting-down part backwards to make the cat stand up, unless there is a clip 1c.
+
+### 1c. Stand up, then walk (optional)
+
+> The same cat sitting (as at the end of clip 1b), then standing up and walking in place toward the right (exactly like clip 1) for about 3 seconds. Flat chroma-key green screen, locked-off camera, whole cat in frame, 6 seconds.
 
 ### 2. Sitting idle
 
@@ -84,9 +88,10 @@ Generate clips 1 and 2 again with different cats, replacing `[orange tabby]`:
 1. Put the videos in `tools/source/`, for example:
    - `tools/source/orange-walk.mp4`
    - `tools/source/orange-sit.mp4`
-2. Add them to `CLIPS` in `tools/make_real_cats.py` with a role:
+2. Add them to a cat in `CATS` in `tools/make_real_cats.py` with a role:
    - `walk`
    - `sitdown`
+   - `standup`
    - `sit`
    - `act`: meow / wave / drink / ...
 
@@ -97,4 +102,4 @@ Generate clips 1 and 2 again with different cats, replacing `[orange tabby]`:
    ```
 3. Run `python tools/make_real_cats.py`, then build.
    - The walk speed is measured automatically from the planted paws, so they don't slide.
-   - All clips share one scale, so keep the camera framing the same across clips.
+   - All clips share one scale, so keep the camera framing the same across clips. If the framing differs, set `"fit": "auto"` on the cat: each clip is then sized to match the walk clip.

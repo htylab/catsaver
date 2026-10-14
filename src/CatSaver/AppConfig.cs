@@ -72,7 +72,8 @@ public sealed class AppConfig
 
     /// <summary>
     /// Cat style: "random" (a different Noto cat set each reminder), a set id from
-    /// Assets/Noto/sprites.json ("happy", "drama", "cool", "bigcat"), or "classic"
+    /// Assets/Noto/sprites.json ("happy", "drama", "cool", "bigcat") or Assets/RealCats/realcats.json
+    /// ("realcat", "realcat2", "realcat3"), or "classic"
     /// (hand-drawn cat that waves and holds a glass of water; uses catColor).
     /// </summary>
     public string Animation { get; set; } = "random";
